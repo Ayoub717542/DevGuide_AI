@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Entity
 public class Conversation {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String title;
