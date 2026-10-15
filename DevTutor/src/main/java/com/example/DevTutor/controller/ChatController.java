@@ -14,7 +14,9 @@ public class ChatController {
     private final ChatService chatService;
 
     @PostMapping
-    public String reply(@RequestBody String message) throws IOException {
-        return chatService.reply(message);
+    public String reply(
+            @RequestParam String conversationId,
+            @RequestBody String message) throws IOException {
+        return chatService.reply(conversationId,message);
     }
 }
