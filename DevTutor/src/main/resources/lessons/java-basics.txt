@@ -1,0 +1,10 @@
+DevTutor Java Course
+
+The course has three modules:
+Module 1: Classes and objects.
+Module 2: Interfaces.
+Module 3: Inheritance.
+
+The final exercise is called Library Builder.
+Students must create a Book class and a Borrowable interface.
+The recommended practice duration is 25 minutes per day.
