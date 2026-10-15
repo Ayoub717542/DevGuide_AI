@@ -20,6 +20,10 @@ public class Conversation {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private User createdBy;
+
     @PrePersist
     private void onCreate() {
         createdAt = LocalDateTime.now();

@@ -16,8 +16,13 @@ public class Message {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private MessageRole role;
+
     private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
