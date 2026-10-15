@@ -1,0 +1,19 @@
+package com.example.DevTutor.mapper;
+
+import com.example.DevTutor.dto.ConversationResponse;
+import com.example.DevTutor.dto.CreateConversationRequest;
+import com.example.DevTutor.entity.Conversation;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+@Mapper(componentModel = "spring")
+public interface ConversationMapper {
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    Conversation toEntity(CreateConversationRequest request);
+
+    @Mapping(source = "createdBy.id", target = "createdById")
+    ConversationResponse toResponse(Conversation conversation);
+}

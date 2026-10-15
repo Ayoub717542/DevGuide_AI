@@ -1,11 +1,9 @@
 package com.example.DevTutor.controller;
 
-import com.example.DevTutor.entity.Conversation;
+import com.example.DevTutor.dto.*;
 import com.example.DevTutor.service.serviceInterface.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -15,15 +13,13 @@ public class ChatController {
     private final ChatService chatService;
 
     @PostMapping
-    public String reply(
-            @RequestParam String conversationId,
-            @RequestBody String message) throws IOException {
-        return chatService.reply(conversationId,message);
+    public MessageResponse reply(@RequestBody MessageRequest request) {
+        return chatService.reply(request);
     }
 
     @PostMapping("/conversations")
-    public Conversation createConversation(@RequestParam String title) {
-        return chatService.createConversation(title);
+    public ConversationResponse createConversation(
+            @RequestBody CreateConversationRequest request) {
+        return chatService.createConversation(request);
     }
-
 }
