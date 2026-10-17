@@ -84,10 +84,16 @@ public class ChatServiceImpl implements ChatService {
 
         String answer = chatClient.prompt()
                 .user(request.getContent())
-                .advisors(a -> a.param(
-                        ChatMemory.CONVERSATION_ID,
-                        conversation.getId().toString()
-                ))
+                .advisors(a -> a
+                        .param(
+                                ChatMemory.CONVERSATION_ID,
+                                conversation.getId().toString()
+                        )
+                        .param(
+                                QuestionAnswerAdvisor.FILTER_EXPRESSION,
+                                "conversationId == '" + conversation.getId() + "'"
+                        )
+                )
                 .call()
                 .content();
 

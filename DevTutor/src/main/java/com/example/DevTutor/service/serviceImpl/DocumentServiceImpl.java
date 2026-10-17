@@ -18,7 +18,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final VectorStore vectorStore;
 
     @Override
-    public int uploadPdf(MultipartFile file) {
+    public int uploadPdf(Long conversationId, MultipartFile file) {
 
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Please select a PDF file.");
@@ -38,6 +38,15 @@ public class DocumentServiceImpl implements DocumentService {
             throw new IllegalArgumentException(
                     "No readable text was found in this PDF.");
         }
+
+        for (Document chunk : chunks) {
+            chunk.getMetadata().put(
+                    "conversationId",
+                    conversationId.toString()
+            );
+        }
+
+        vectorStore.add(chunks);
 
         vectorStore.add(chunks); //Generates embeddings and stores the passages
 

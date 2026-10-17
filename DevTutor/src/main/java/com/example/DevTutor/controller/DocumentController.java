@@ -20,9 +20,10 @@ public class DocumentController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE //the HTTP format used to upload files.
     )
     public Map<String, Integer> uploadPdf(
+            @RequestParam Long conversationId,
             @RequestParam("file") MultipartFile file) { //- MultipartFile → gives Java access to that file.
 
-        int chunks = documentService.uploadPdf(file);
+        int chunks = documentService.uploadPdf(conversationId,file);
 
         return Map.of("chunksStored", chunks);
     }
