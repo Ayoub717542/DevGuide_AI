@@ -20,6 +20,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
+
 @Service
 public class ChatServiceImpl implements ChatService {
 
@@ -32,6 +35,7 @@ public class ChatServiceImpl implements ChatService {
     public ChatServiceImpl(
             ChatClient.Builder builder,
             ChatMemory chatMemory,
+            VectorStore vectorStore,
             ConversationRepository conversationRepository,
             MessageRepository messageRepository,
             ConversationMapper conversationMapper,
@@ -49,7 +53,8 @@ public class ChatServiceImpl implements ChatService {
         this.chatClient = builder
                 .defaultSystem(guide)
                 .defaultAdvisors(
-                        MessageChatMemoryAdvisor.builder(chatMemory).build()
+                        MessageChatMemoryAdvisor.builder(chatMemory).build(),
+                        QuestionAnswerAdvisor.builder(vectorStore).build()
                 )
                 .build();
     }
