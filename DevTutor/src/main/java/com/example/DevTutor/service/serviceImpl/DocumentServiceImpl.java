@@ -32,7 +32,7 @@ public class DocumentServiceImpl implements DocumentService {
         TokenTextSplitter splitter = //uses token counts to limit passage sizes.
                 TokenTextSplitter.builder().build(); //Divides that text into smaller passages, called chunks
 
-        List<Document> chunks = splitter.apply(pages);
+        List<Document> chunks = splitter.apply(pages); //divides that text into smaller Spring AI Document objects.
 
         if (chunks.isEmpty()) {
             throw new IllegalArgumentException(
@@ -43,6 +43,10 @@ public class DocumentServiceImpl implements DocumentService {
             chunk.getMetadata().put(
                     "conversationId",
                     conversationId.toString()
+            );
+            chunk.getMetadata().put(
+                    "filename",
+                    file.getOriginalFilename()
             );
         }
 

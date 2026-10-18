@@ -10,15 +10,19 @@ import com.example.DevTutor.repository.ConversationRepository;
 import com.example.DevTutor.repository.MessageRepository;
 import com.example.DevTutor.service.serviceInterface.ChatService;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.ai.document.Document;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
@@ -82,7 +86,7 @@ public class ChatServiceImpl implements ChatService {
 
         messageRepository.save(userMessage);
 
-        String answer = chatClient.prompt()
+        ChatClientResponse aiResponse = chatClient.prompt()
                 .user(request.getContent())
                 .advisors(a -> a
                         .param(
@@ -95,8 +99,29 @@ public class ChatServiceImpl implements ChatService {
                         )
                 )
                 .call()
-                .content();
+                .chatClientResponse();
 
+        String answer = aiResponse.chatResponse() == null ? null : aiResponse.chatResponse().getResult().getOutput().getText();
+
+        Object retrieved = aiResponse.context()
+                .get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS);
+
+        List<SourceResponse> sources = new ArrayList<>();
+
+        if (retrieved instanceof List<?> documents) {
+            for (Object item : documents) {
+                if (item instanceof Document document) {
+
+                    Object filename = document.getMetadata().get("filename");
+
+                    sources.add(new SourceResponse(
+                            filename == null ? "Unknown file" : filename.toString(),
+                            null,
+                            null
+                    ));
+                }
+            }
+        }
         if (answer == null || answer.isBlank()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
@@ -110,7 +135,9 @@ public class ChatServiceImpl implements ChatService {
 
         Message savedAnswer = messageRepository.save(assistantMessage);
 
-        return messageMapper.toResponse(savedAnswer);
+        MessageResponse response = messageMapper.toResponse(savedAnswer);
+        response.setSources(sources);
+        return response;
     }
 
     @Override
