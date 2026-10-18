@@ -65,7 +65,6 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public MessageResponse reply(MessageRequest request) {
-
         if (request.getConversationId() == null
                 || request.getContent() == null
                 || request.getContent().isBlank()) {

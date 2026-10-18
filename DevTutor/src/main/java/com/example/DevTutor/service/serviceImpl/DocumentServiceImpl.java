@@ -8,8 +8,10 @@ import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import com.example.DevTutor.dto.DocumentUploadResponse;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -18,8 +20,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final VectorStore vectorStore;
 
     @Override
-    public int uploadPdf(Long conversationId, MultipartFile file) {
-
+    public DocumentUploadResponse uploadPdf(Long conversationId, MultipartFile file){
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Please select a PDF file.");
         }
@@ -38,22 +39,30 @@ public class DocumentServiceImpl implements DocumentService {
             throw new IllegalArgumentException(
                     "No readable text was found in this PDF.");
         }
+        String documentId = UUID.randomUUID().toString();
 
         for (Document chunk : chunks) {
             chunk.getMetadata().put(
                     "conversationId",
                     conversationId.toString()
             );
+
+            chunk.getMetadata().put(
+                    "documentId", documentId);
+
             chunk.getMetadata().put(
                     "filename",
                     file.getOriginalFilename()
             );
         }
 
-        vectorStore.add(chunks);
-
         vectorStore.add(chunks); //Generates embeddings and stores the passages
 
-        return chunks.size(); //Returns how many chunks were stored
+        return new DocumentUploadResponse(
+                documentId,
+                file.getOriginalFilename(),
+                chunks.size()
+        );
+        //Returns how many chunks were stored
     }
 }

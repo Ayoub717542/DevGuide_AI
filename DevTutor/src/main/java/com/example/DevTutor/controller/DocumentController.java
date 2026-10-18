@@ -1,5 +1,6 @@
 package com.example.DevTutor.controller;
 
+import com.example.DevTutor.dto.DocumentUploadResponse;
 import com.example.DevTutor.service.serviceInterface.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -12,19 +13,16 @@ import java.util.Map;
 @RequestMapping("/api/documents")
 @RequiredArgsConstructor
 public class DocumentController {
-
     private final DocumentService documentService;
 
     @PostMapping(
             value = "/upload",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE //the HTTP format used to upload files.
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
-    public Map<String, Integer> uploadPdf(
+    public DocumentUploadResponse uploadPdf(
             @RequestParam Long conversationId,
-            @RequestParam("file") MultipartFile file) { //- MultipartFile → gives Java access to that file.
+            @RequestParam("file") MultipartFile file) {
 
-        int chunks = documentService.uploadPdf(conversationId,file);
-
-        return Map.of("chunksStored", chunks);
+        return documentService.uploadPdf(conversationId, file);
     }
 }
