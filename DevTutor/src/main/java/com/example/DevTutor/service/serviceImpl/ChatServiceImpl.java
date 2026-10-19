@@ -18,6 +18,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.ai.document.Document;
+import org.springframework.web.multipart.MultipartFile;
+import com.example.DevTutor.util.MimeTypes;
+import org.springframework.ai.content.Media;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -58,13 +62,33 @@ public class ChatServiceImpl implements ChatService {
                 .defaultSystem(guide)
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build(),
-                        QuestionAnswerAdvisor.builder(vectorStore).build()
+
+                        QuestionAnswerAdvisor.builder(vectorStore)
+                                .promptTemplate(new PromptTemplate("""
+                                Answer the user's question using the conversation
+                                and any attached image.
+
+                                Retrieved documents:
+                                ---------------------
+                                {question_answer_context}
+                                ---------------------
+
+                                Use the documents when relevant.
+                                If they are empty or irrelevant, answer using
+                                the conversation, attached image and your knowledge.
+                                Do not invent details about documents or images.
+                                If something is unclear, ask for clarification.
+
+                                User question:
+                                {query}
+                                """))
+                                .build()
                 )
                 .build();
     }
 
     @Override
-    public MessageResponse reply(MessageRequest request) {
+    public MessageResponse reply(MessageRequest request, MultipartFile file) {
         if (request.getConversationId() == null
                 || request.getContent() == null
                 || request.getContent().isBlank()) {
@@ -79,6 +103,7 @@ public class ChatServiceImpl implements ChatService {
                         HttpStatus.NOT_FOUND,
                         "Conversation not found"));
 
+        Media media = toMedia(file);
         Message userMessage = messageMapper.toEntity(request);
         userMessage.setRole(MessageRole.USER);
         userMessage.setConversation(conversation);
@@ -86,7 +111,12 @@ public class ChatServiceImpl implements ChatService {
         messageRepository.save(userMessage);
 
         ChatClientResponse aiResponse = chatClient.prompt()
-                .user(request.getContent())
+                .user(u -> {
+                    u.text(request.getContent());
+                    if (media != null) {
+                        u.media(media);
+                    }
+                })
                 .advisors(a -> a
                         .param(
                                 ChatMemory.CONVERSATION_ID,
@@ -155,5 +185,30 @@ public class ChatServiceImpl implements ChatService {
                 conversationRepository.save(conversation);
 
         return conversationMapper.toResponse(savedConversation);
+    }
+
+    private static Media toMedia(MultipartFile file) {
+        if (file == null) {
+            return null;
+        }
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "The attached image is empty.");
+        }
+        String filename = file.getOriginalFilename();
+
+        if (!MimeTypes.isImage(filename)) {
+            throw new IllegalArgumentException(
+                    "Only PNG, JPEG and WebP images are allowed.");
+        }
+        try {
+            return Media.builder()
+                    .mimeType(MimeTypes.ofFilename(filename))
+                    .data(file.getBytes())
+                    .build();
+        } catch (IOException e) {
+            throw new IllegalArgumentException(
+                    "Could not read the attached image.");
+        }
     }
 }

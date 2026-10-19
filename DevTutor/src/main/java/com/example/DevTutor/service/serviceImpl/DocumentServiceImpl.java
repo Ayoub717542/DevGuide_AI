@@ -1,5 +1,6 @@
 package com.example.DevTutor.service.serviceImpl;
 
+import com.example.DevTutor.repository.ConversationRepository;
 import com.example.DevTutor.service.serviceInterface.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.document.Document;
@@ -9,6 +10,8 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import com.example.DevTutor.dto.DocumentUploadResponse;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,11 +21,19 @@ import java.util.UUID;
 public class DocumentServiceImpl implements DocumentService {
 
     private final VectorStore vectorStore;
+    private final ConversationRepository conversationRepository;
 
     @Override
     public DocumentUploadResponse uploadPdf(Long conversationId, MultipartFile file){
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Please select a PDF file.");
+        }
+        if (conversationRepository.findById(conversationId).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found");
+        }
+        String filename = file.getOriginalFilename();
+        if (filename == null || !filename.toLowerCase().endsWith(".pdf")) {
+            throw new IllegalArgumentException("Only PDF files are allowed.");
         }
 
         PagePdfDocumentReader reader =
