@@ -27,7 +27,6 @@ public class GlobalExceptionHandler {
             IllegalArgumentException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
-
     @ExceptionHandler({HttpMessageNotReadableException.class,
             MissingServletRequestParameterException.class})
     public ResponseEntity<ApiError> handleBadInput(
@@ -41,7 +40,6 @@ public class GlobalExceptionHandler {
                 "File is too large. Maximum size is 10 MB.", request);
     }
 
-    // ---- pass through your own statuses (404, 502...) but expose the reason ----
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiError> handleStatus(
             ResponseStatusException ex, HttpServletRequest request) {
@@ -49,7 +47,6 @@ public class GlobalExceptionHandler {
                 ex.getReason(), request);
     }
 
-    // ---- Gemini failures ----
     @ExceptionHandler(ClientException.class)
     public ResponseEntity<ApiError> handleGeminiClient(
             ClientException ex, HttpServletRequest request) {
@@ -79,7 +76,6 @@ public class GlobalExceptionHandler {
                 "Cannot reach the AI service. Please try again later.", request);
     }
 
-    // ---- Spring AI retry wrappers (may bubble up from advisors) ----
     @ExceptionHandler(TransientAiException.class)
     public ResponseEntity<ApiError> handleTransientAi(
             TransientAiException ex, HttpServletRequest request) {
@@ -96,7 +92,6 @@ public class GlobalExceptionHandler {
                 "The AI service rejected the request.", request);
     }
 
-    // ---- Qdrant down ----
     @ExceptionHandler(QdrantException.class)
     public ResponseEntity<ApiError> handleQdrant(
             QdrantException ex, HttpServletRequest request) {
@@ -105,7 +100,6 @@ public class GlobalExceptionHandler {
                 "Document search is unavailable. Please try again later.", request);
     }
 
-    // ---- catch-all: never leak internals ----
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleUnexpected(
             Exception ex, HttpServletRequest request) {
