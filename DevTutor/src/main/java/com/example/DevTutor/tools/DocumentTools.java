@@ -1,0 +1,72 @@
+package com.example.DevTutor.tools;
+
+import com.example.DevTutor.entity.GeneratedDocument;
+import com.example.DevTutor.service.serviceInterface.GeneratedDocumentService;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.stereotype.Component;
+import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class DocumentTools {
+
+    private final GeneratedDocumentService documentService;
+
+    @Tool(description = """
+            Create a styled PDF or Word document when requested.
+
+            Generate the complete document as valid XHTML with CSS.
+            Follow the user's requested colors, layout and style.
+            If no style is specified, choose a readable professional design.
+
+            Include all content inside the HTML.
+            Use headings, paragraphs, lists and tables where appropriate.
+            Use inline CSS for formatting.
+            Close every tag, including self-closing tags such as <br />.
+            Escape special characters, for example &amp; instead of &.
+
+            Do not include Markdown fences, JavaScript, external resources,
+            CSS imports, flexbox or grid.
+            Use PDF or DOCX as the output format.
+
+            Return the download path after successful creation.
+            """)
+    public Map<String, Object> createDocument(
+            @ToolParam(description = "Document title, at most 255 characters")
+            String title,
+
+            @ToolParam(description = "Complete valid XHTML with inline CSS")
+            String html,
+
+            @ToolParam(description = "PDF or DOCX")
+            String format
+    ) {
+        try {
+            GeneratedDocument document =
+                    documentService.createDocument(title, html, format);
+
+            return Map.of(
+                    "success", true,
+                    "documentId", document.getId(),
+                    "format", document.getFormat(),
+                    "downloadPath",
+                    "/api/documents/" + document.getId() + "/download"
+            );
+
+        } catch (RuntimeException e) {
+
+            log.error("Document generation failed", e);
+
+
+            return Map.of(
+                    "success", false,
+                    "error", "Document generation failed. No download is available."
+            );
+        }
+    }
+}

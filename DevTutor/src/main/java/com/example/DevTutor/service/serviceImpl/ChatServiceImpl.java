@@ -24,6 +24,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import com.cloudinary.Cloudinary;
 import java.util.Map;
+import com.example.DevTutor.tools.DocumentTools;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -44,6 +45,7 @@ public class ChatServiceImpl implements ChatService {
     private final Cloudinary cloudinary;
 
     public ChatServiceImpl(
+            DocumentTools documentTools,
             ChatClient.Builder builder,
             ChatMemory chatMemory,
             VectorStore vectorStore,
@@ -64,6 +66,7 @@ public class ChatServiceImpl implements ChatService {
 
         this.chatClient = builder
                 .defaultSystem(guide)
+                .defaultTools(documentTools)
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build(),
 
