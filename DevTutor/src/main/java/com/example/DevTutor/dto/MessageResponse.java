@@ -20,4 +20,5 @@ public class MessageResponse {
     private LocalDateTime createdAt;
     private Long conversationId;
     private List<SourceResponse> sources;
+    private String imageUrl;
 }

@@ -22,6 +22,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.DevTutor.util.MimeTypes;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import com.cloudinary.Cloudinary;
+import java.util.Map;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -39,6 +41,7 @@ public class ChatServiceImpl implements ChatService {
     private final MessageRepository messageRepository;
     private final ConversationMapper conversationMapper;
     private final MessageMapper messageMapper;
+    private final Cloudinary cloudinary;
 
     public ChatServiceImpl(
             ChatClient.Builder builder,
@@ -47,13 +50,14 @@ public class ChatServiceImpl implements ChatService {
             ConversationRepository conversationRepository,
             MessageRepository messageRepository,
             ConversationMapper conversationMapper,
-            MessageMapper messageMapper
+            MessageMapper messageMapper, Cloudinary cloudinary
     ) throws IOException {
 
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.conversationMapper = conversationMapper;
         this.messageMapper = messageMapper;
+        this.cloudinary = cloudinary;
 
         String guide = new ClassPathResource("devtutor-guide.txt")
                 .getContentAsString(StandardCharsets.UTF_8);
@@ -103,9 +107,22 @@ public class ChatServiceImpl implements ChatService {
                         "Conversation not found"));
 
         Media media = toMedia(file);
+
         Message userMessage = messageMapper.toEntity(request);
         userMessage.setRole(MessageRole.USER);
         userMessage.setConversation(conversation);
+// Upload the image only if one was attached.
+        if (media != null) {
+            Map<?, ?> uploaded = uploadImage(file);
+
+            userMessage.setImageUrl(
+                    uploaded.get("secure_url").toString()
+            );
+
+            userMessage.setImagePublicId(
+                    uploaded.get("public_id").toString()
+            );
+        }
 
         messageRepository.save(userMessage);
 
@@ -167,7 +184,22 @@ public class ChatServiceImpl implements ChatService {
 
         MessageResponse response = messageMapper.toResponse(savedAnswer);
         response.setSources(sources);
+        response.setImageUrl(userMessage.getImageUrl());
         return response;
+    }
+    private Map<?, ?> uploadImage(MultipartFile file) {
+        try {
+            return cloudinary.uploader().upload(
+                    file.getBytes(),
+                    Map.of("resource_type", "image")
+            );
+        } catch (IOException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Could not upload the image",
+                    e
+            );
+        }
     }
 
     @Override
