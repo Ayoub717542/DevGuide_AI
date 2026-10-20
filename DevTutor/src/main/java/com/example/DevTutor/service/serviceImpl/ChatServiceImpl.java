@@ -96,7 +96,6 @@ public class ChatServiceImpl implements ChatService {
                     HttpStatus.BAD_REQUEST,
                     "Conversation ID and content are required");
         }
-
         Conversation conversation = conversationRepository
                 .findById(request.getConversationId())
                 .orElseThrow(() -> new ResponseStatusException(
@@ -130,7 +129,9 @@ public class ChatServiceImpl implements ChatService {
                 .call()
                 .chatClientResponse();
 
-        String answer = aiResponse.chatResponse() == null ? null : aiResponse.chatResponse().getResult().getOutput().getText();
+        String answer = aiResponse.chatResponse() == null
+                ? null
+                : aiResponse.chatResponse().getResult().getOutput().getText();
 
         Object retrieved = aiResponse.context()
                 .get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS);

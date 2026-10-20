@@ -30,6 +30,10 @@ public class Message {
     @JoinColumn(name = "conversation_id", nullable = false)
     private Conversation conversation;
 
+    private String imageUrl;
+
+    private String imagePublicId;
+
     @PrePersist
     private void onCreate() {
         createdAt = LocalDateTime.now();

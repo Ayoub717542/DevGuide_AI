@@ -39,7 +39,13 @@ public class DocumentServiceImpl implements DocumentService {
         PagePdfDocumentReader reader =
                 new PagePdfDocumentReader(file.getResource()); //Gives the reader access to the uploaded file
 
-        List<Document> pages = reader.get(); //Extracts PDF text into Document objects
+        List<Document> pages;
+        try {
+            pages = reader.get(); //Extracts PDF text into Document objects
+        } catch (Exception e) {
+            throw new IllegalArgumentException(
+                    "Could not read this PDF. Make sure it is a valid, unencrypted PDF.");
+        }
 
         TokenTextSplitter splitter = //uses token counts to limit passage sizes.
                 TokenTextSplitter.builder().build(); //Divides that text into smaller passages, called chunks
