@@ -1,5 +1,6 @@
 package com.example.DevTutor.config;
 
+import com.aayushatharva.brotli4j.Brotli4jLoader;
 import com.cloudinary.Cloudinary;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +17,8 @@ public class CloudinaryConfig {
             @Value("${cloudinary.api-key}") String apiKey,
             @Value("${cloudinary.api-secret}") String apiSecret
     ) {
+        // Cloudinary replies with Brotli-compressed responses; load brotli4j's native library first.
+        Brotli4jLoader.ensureAvailability();
         return new Cloudinary(Map.of(
                 "cloud_name", cloudName,
                 "api_key", apiKey,

@@ -8,6 +8,8 @@ import com.example.DevTutor.mapper.ConversationMapper;
 import com.example.DevTutor.mapper.MessageMapper;
 import com.example.DevTutor.repository.ConversationRepository;
 import com.example.DevTutor.repository.MessageRepository;
+import com.example.DevTutor.repository.UserRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
 import com.example.DevTutor.service.serviceInterface.ChatService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientResponse;
@@ -44,6 +46,7 @@ public class ChatServiceImpl implements ChatService {
     private final ConversationMapper conversationMapper;
     private final MessageMapper messageMapper;
     private final Cloudinary cloudinary;
+    private final UserRepository userRepository;
 
     public ChatServiceImpl(
             ToolCallbackProvider mcpTools,
@@ -54,9 +57,11 @@ public class ChatServiceImpl implements ChatService {
             ConversationRepository conversationRepository,
             MessageRepository messageRepository,
             ConversationMapper conversationMapper,
-            MessageMapper messageMapper, Cloudinary cloudinary
+            MessageMapper messageMapper, Cloudinary cloudinary,
+            UserRepository userRepository
     ) throws IOException {
 
+        this.userRepository = userRepository;
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.conversationMapper = conversationMapper;
@@ -105,8 +110,9 @@ public class ChatServiceImpl implements ChatService {
                     HttpStatus.BAD_REQUEST,
                     "Conversation ID and content are required");
         }
+        // Only the creator can use a conversation (admins included).
         Conversation conversation = conversationRepository
-                .findById(request.getConversationId())
+                .findByIdAndCreatedByEmail(request.getConversationId(), currentUserEmail())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Conversation not found"));
@@ -218,11 +224,19 @@ public class ChatServiceImpl implements ChatService {
         }
 
         Conversation conversation = conversationMapper.toEntity(request);
+        conversation.setCreatedBy(userRepository.findByEmail(currentUserEmail())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "User not found")));
 
         Conversation savedConversation =
                 conversationRepository.save(conversation);
 
         return conversationMapper.toResponse(savedConversation);
+    }
+
+    private static String currentUserEmail() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
     private static Media toMedia(MultipartFile file) {

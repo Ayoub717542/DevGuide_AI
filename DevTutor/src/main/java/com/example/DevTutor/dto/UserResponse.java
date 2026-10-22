@@ -1,4 +1,5 @@
 package com.example.DevTutor.dto;
+import com.example.DevTutor.enums.Roles;
 import lombok.*;
 import java.time.LocalDateTime;
 
@@ -11,5 +12,6 @@ public class UserResponse {
     private Long id;
     private String name;
     private String email;
+    private Roles role;
     private LocalDateTime createdAt;
 }

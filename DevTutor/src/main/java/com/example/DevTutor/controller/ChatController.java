@@ -4,6 +4,7 @@ import com.example.DevTutor.dto.*;
 import com.example.DevTutor.service.serviceInterface.ChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,6 +16,7 @@ public class ChatController {
     private final ChatService chatService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public MessageResponse reply(
             @RequestParam("conversationId") Long conversationId,
             @RequestParam("content") String content,
@@ -26,6 +28,7 @@ public class ChatController {
     }
 
     @PostMapping("/conversations")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public ConversationResponse createConversation(
             @RequestBody CreateConversationRequest request) {
 

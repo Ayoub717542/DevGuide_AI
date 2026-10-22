@@ -1,7 +1,9 @@
 package com.example.DevTutor.auth;
 
-import com.example.DevTutor.controller.auth.RegisterRequoestDTO;
 import com.example.DevTutor.dto.UserResponse;
+import com.example.DevTutor.dto.auth.AuthenticationRequestDTO;
+import com.example.DevTutor.dto.auth.AuthenticationResponceDTO;
+import com.example.DevTutor.dto.auth.RegisterRequoestDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,5 +24,10 @@ public class AuthenticationContoller {
     @ResponseStatus(HttpStatus.CREATED)
     public UserResponse register(@Valid @RequestBody RegisterRequoestDTO request) {
         return authenticationService.register(request);
+    }
+
+    @PostMapping("/login")
+    public AuthenticationResponceDTO login(@Valid @RequestBody AuthenticationRequestDTO request) {
+        return authenticationService.login(request);
     }
 }

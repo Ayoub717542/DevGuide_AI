@@ -4,6 +4,7 @@ import com.example.DevTutor.dto.DocumentUploadResponse;
 import com.example.DevTutor.service.serviceInterface.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,6 +20,7 @@ public class DocumentController {
             value = "/upload",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public DocumentUploadResponse uploadPdf(
             @RequestParam Long conversationId,
             @RequestParam("file") MultipartFile file) {

@@ -2,6 +2,7 @@ package com.example.DevTutor.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,6 +15,7 @@ public class EmbeddingController {
     private final EmbeddingModel embeddingModel;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public float[] embed(@RequestBody String text) {
         return embeddingModel.embed(text);
     }

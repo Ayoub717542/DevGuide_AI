@@ -7,6 +7,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import com.example.DevTutor.dto.DocumentUploadResponse;
@@ -28,7 +29,8 @@ public class DocumentServiceImpl implements DocumentService {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Please select a PDF file.");
         }
-        if (conversationRepository.findById(conversationId).isEmpty()) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (conversationRepository.findByIdAndCreatedByEmail(conversationId, email).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found");
         }
         String filename = file.getOriginalFilename();
