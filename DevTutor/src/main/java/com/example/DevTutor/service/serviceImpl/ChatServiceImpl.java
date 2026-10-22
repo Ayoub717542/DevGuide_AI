@@ -33,6 +33,7 @@ import java.util.List;
 
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
+import org.springframework.ai.tool.ToolCallbackProvider;
 
 @Service
 public class ChatServiceImpl implements ChatService {
@@ -45,6 +46,7 @@ public class ChatServiceImpl implements ChatService {
     private final Cloudinary cloudinary;
 
     public ChatServiceImpl(
+            ToolCallbackProvider mcpTools,
             DocumentTools documentTools,
             ChatClient.Builder builder,
             ChatMemory chatMemory,
@@ -66,7 +68,7 @@ public class ChatServiceImpl implements ChatService {
 
         this.chatClient = builder
                 .defaultSystem(guide)
-                .defaultTools(documentTools)
+                .defaultTools(documentTools).defaultTools(mcpTools)
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build(),
 
