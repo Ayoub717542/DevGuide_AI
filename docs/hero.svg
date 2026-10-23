@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="320" viewBox="0 0 960 320" role="img" aria-label="DevGuide AI: an AI programming tutor. Layers: React UI, Spring API, AI core.">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B1120"/>
+      <stop offset="1" stop-color="#111a33"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.22" cy="0.5" r="0.45">
+      <stop offset="0" stop-color="#7C3AED" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#7C3AED" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orb" cx="0.4" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#F5F3FF"/>
+      <stop offset="0.45" stop-color="#A78BFA"/>
+      <stop offset="1" stop-color="#6D28D9"/>
+    </radialGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#ffffff" stroke-opacity="0.04"/>
+    </pattern>
+  </defs>
+
+  <style>
+    .float { animation: float 6s ease-in-out infinite; transform-box: fill-box; }
+    .d1 { animation-delay: -2s; }
+    .d2 { animation-delay: -4s; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+    .orb { animation: bob 4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes bob { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-6px) scale(1.06); } }
+    .flow { stroke-dasharray: 4 8; animation: flow 1.6s linear infinite; }
+    @keyframes flow { to { stroke-dashoffset: -24; } }
+    .star { animation: twinkle 3.5s ease-in-out infinite; }
+    .s2 { animation-delay: -1.2s; } .s3 { animation-delay: -2.4s; }
+    @keyframes twinkle { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.8; } }
+    .label { font: 600 13px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #E2E8F0; }
+    .sub { font: 400 11px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #94A3B8; }
+    .title { font: 700 34px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #FFFFFF; letter-spacing: -0.5px; }
+    .tag { font: 400 15px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #C7D2FE; }
+    .chip { font: 500 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #E0E7FF; }
+    @media (prefers-reduced-motion: reduce) {
+      .float, .orb, .flow, .star { animation: none; }
+    }
+  </style>
+
+  <rect width="960" height="320" rx="16" fill="url(#bg)"/>
+  <rect width="960" height="320" rx="16" fill="url(#grid)"/>
+  <rect width="960" height="320" rx="16" fill="url(#glow)"/>
+
+  <!-- stars -->
+  <circle class="star" cx="60" cy="40" r="1.5" fill="#fff"/>
+  <circle class="star s2" cx="420" cy="30" r="1.2" fill="#fff"/>
+  <circle class="star s3" cx="900" cy="60" r="1.5" fill="#fff"/>
+  <circle class="star s2" cx="520" cy="290" r="1.2" fill="#fff"/>
+  <circle class="star" cx="860" cy="280" r="1.3" fill="#fff"/>
+  <circle class="star s3" cx="40" cy="270" r="1.2" fill="#fff"/>
+
+  <!-- isometric stack: bottom React UI, middle Spring API, top AI core -->
+  <g class="float">
+    <polygon points="80,232 200,292 200,310 80,250" fill="#0E7490"/>
+    <polygon points="200,292 320,232 320,250 200,310" fill="#155E75"/>
+    <polygon points="200,172 320,232 200,292 80,232" fill="#06B6D4" fill-opacity="0.9"/>
+    <polygon points="200,186 292,232 200,278 108,232" fill="none" stroke="#CFFAFE" stroke-opacity="0.35"/>
+  </g>
+  <g class="float d1">
+    <polygon points="80,162 200,222 200,240 80,180" fill="#3730A3"/>
+    <polygon points="200,222 320,162 320,180 200,240" fill="#312E81"/>
+    <polygon points="200,102 320,162 200,222 80,162" fill="#4F46E5" fill-opacity="0.92"/>
+    <polygon points="200,116 292,162 200,208 108,162" fill="none" stroke="#E0E7FF" stroke-opacity="0.35"/>
+  </g>
+  <g class="float d2">
+    <polygon points="80,92 200,152 200,170 80,110" fill="#5B21B6"/>
+    <polygon points="200,152 320,92 320,110 200,170" fill="#4C1D95"/>
+    <polygon points="200,32 320,92 200,152 80,92" fill="#7C3AED" fill-opacity="0.92"/>
+    <polygon points="200,46 292,92 200,138 108,92" fill="none" stroke="#EDE9FE" stroke-opacity="0.35"/>
+  </g>
+
+  <!-- request path flowing up through the stack -->
+  <line class="flow" x1="200" y1="292" x2="200" y2="70" stroke="#A5F3FC" stroke-width="2" stroke-linecap="round"/>
+  <circle r="3.5" fill="#ECFEFF">
+    <animateMotion dur="2.4s" repeatCount="indefinite" path="M200,280 L200,70"/>
+    <animate attributeName="opacity" values="0;1;1;0" dur="2.4s" repeatCount="indefinite"/>
+  </circle>
+  <circle class="orb" cx="200" cy="66" r="13" fill="url(#orb)"/>
+
+  <!-- layer labels -->
+  <g>
+    <line x1="322" y1="96" x2="352" y2="96" stroke="#7C3AED" stroke-opacity="0.8"/>
+    <text class="label" x="360" y="94">AI core</text>
+    <text class="sub" x="360" y="109">Gemini · RAG · MCP</text>
+    <line x1="322" y1="166" x2="352" y2="166" stroke="#4F46E5" stroke-opacity="0.8"/>
+    <text class="label" x="360" y="164">Spring API</text>
+    <text class="sub" x="360" y="179">JWT · roles · memory</text>
+    <line x1="322" y1="236" x2="352" y2="236" stroke="#06B6D4" stroke-opacity="0.8"/>
+    <text class="label" x="360" y="234">React UI</text>
+    <text class="sub" x="360" y="249">Vite · JavaScript</text>
+  </g>
+
+  <!-- title -->
+  <text class="title" x="540" y="132">DevGuide AI</text>
+  <text class="tag" x="540" y="162">An AI tutor that teaches you to code,</text>
+  <text class="tag" x="540" y="184">step by step, from real documentation.</text>
+  <g transform="translate(540 210)">
+    <rect width="104" height="26" rx="13" fill="#4F46E5" fill-opacity="0.25" stroke="#818CF8" stroke-opacity="0.5"/>
+    <text class="chip" x="52" y="17" text-anchor="middle">Step-by-step</text>
+    <rect x="114" width="96" height="26" rx="13" fill="#06B6D4" fill-opacity="0.18" stroke="#67E8F9" stroke-opacity="0.5"/>
+    <text class="chip" x="162" y="17" text-anchor="middle">Your PDFs</text>
+    <rect x="220" width="112" height="26" rx="13" fill="#7C3AED" fill-opacity="0.22" stroke="#C4B5FD" stroke-opacity="0.5"/>
+    <text class="chip" x="276" y="17" text-anchor="middle">Live docs</text>
+  </g>
+</svg>
