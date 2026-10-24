@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
 import org.springframework.web.multipart.MultipartFile;
 import com.example.DevTutor.util.MimeTypes;
 import org.springframework.ai.content.Media;
@@ -28,7 +29,8 @@ import com.example.DevTutor.tools.DocumentTools;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import org.springframework.ai.vectorstore.VectorStore;
@@ -153,25 +155,9 @@ public class ChatServiceImpl implements ChatService {
                 ? null
                 : aiResponse.chatResponse().getResult().getOutput().getText();
 
-        Object retrieved = aiResponse.context()
-                .get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS);
+        List<SourceResponse> sources = toSources(aiResponse.context()
+                .get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS));
 
-        List<SourceResponse> sources = new ArrayList<>();
-
-        if (retrieved instanceof List<?> documents) {
-            for (Object item : documents) {
-                if (item instanceof Document document) {
-
-                    Object filename = document.getMetadata().get("filename");
-
-                    sources.add(new SourceResponse(
-                            filename == null ? "Unknown file" : filename.toString(),
-                            null,
-                            null
-                    ));
-                }
-            }
-        }
         if (answer == null || answer.isBlank()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
@@ -190,6 +176,48 @@ public class ChatServiceImpl implements ChatService {
         response.setImageUrl(userMessage.getImageUrl());
         return response;
     }
+
+    // One source per file and page range, without duplicates.
+    private static List<SourceResponse> toSources(Object retrieved) {
+        if (!(retrieved instanceof List<?> documents)) {
+            return List.of();
+        }
+
+        Map<String, SourceResponse> unique = new LinkedHashMap<>();
+
+        for (Object item : documents) {
+            if (item instanceof Document document) {
+                Map<String, Object> metadata = document.getMetadata();
+
+                Object filename = metadata.get("filename");
+                String name = filename == null ? "Unknown file" : filename.toString();
+
+                Integer startPage = toPage(metadata.get(
+                        PagePdfDocumentReader.METADATA_START_PAGE_NUMBER));
+                Integer endPage = toPage(metadata.get(
+                        PagePdfDocumentReader.METADATA_END_PAGE_NUMBER));
+                // A chunk on a single page has no end page.
+                if (endPage == null) {
+                    endPage = startPage;
+                }
+
+                unique.putIfAbsent(name + "|" + startPage + "|" + endPage,
+                        new SourceResponse(name, startPage, endPage));
+            }
+        }
+
+        return unique.values().stream()
+                .sorted(Comparator.comparing(SourceResponse::getFilename)
+                        .thenComparing(SourceResponse::getStartPage,
+                                Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+    }
+
+    // Qdrant may return page numbers as Long or Double.
+    private static Integer toPage(Object value) {
+        return value instanceof Number number ? number.intValue() : null;
+    }
+
     private Map<?, ?> uploadImage(MultipartFile file) {
         try {
             return cloudinary.uploader().upload(
