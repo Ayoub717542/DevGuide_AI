@@ -5,6 +5,7 @@ import com.example.DevTutor.service.serviceInterface.GeneratedDocumentService;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,8 @@ public class DocumentTools {
             Use inline CSS for formatting.
             Close every tag, including self-closing tags such as <br />.
             Escape special characters, for example &amp; instead of &.
+            Always write < as &lt; and > as &gt; in text and code, for example
+            if (a &lt; b) and List&lt;String&gt;.
 
             Do not include Markdown fences, JavaScript, external resources,
             CSS imports, flexbox or grid.
@@ -44,11 +47,17 @@ public class DocumentTools {
             String html,
 
             @ToolParam(description = "PDF or DOCX")
-            String format
+            String format,
+
+            // Set by ChatServiceImpl; the AI cannot see or change it.
+            ToolContext toolContext
     ) {
         try {
+            Long conversationId =
+                    (Long) toolContext.getContext().get("conversationId");
+
             GeneratedDocument document =
-                    documentService.createDocument(title, html, format);
+                    documentService.createDocument(title, html, format, conversationId);
 
             return Map.of(
                     "success", true,

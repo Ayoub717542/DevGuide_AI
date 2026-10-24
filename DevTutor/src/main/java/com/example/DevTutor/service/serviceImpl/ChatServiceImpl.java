@@ -6,6 +6,7 @@ import com.example.DevTutor.entity.Message;
 import com.example.DevTutor.enums.MessageRole;
 import com.example.DevTutor.mapper.MessageMapper;
 import com.example.DevTutor.repository.ConversationRepository;
+import com.example.DevTutor.repository.GeneratedDocumentRepository;
 import com.example.DevTutor.repository.MessageRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.example.DevTutor.service.serviceInterface.ChatService;
@@ -45,6 +46,7 @@ public class ChatServiceImpl implements ChatService {
     private final MessageRepository messageRepository;
     private final MessageMapper messageMapper;
     private final Cloudinary cloudinary;
+    private final GeneratedDocumentRepository generatedDocumentRepository;
 
     public ChatServiceImpl(
             ToolCallbackProvider mcpTools,
@@ -54,9 +56,11 @@ public class ChatServiceImpl implements ChatService {
             VectorStore vectorStore,
             ConversationRepository conversationRepository,
             MessageRepository messageRepository,
-            MessageMapper messageMapper, Cloudinary cloudinary
+            MessageMapper messageMapper, Cloudinary cloudinary,
+            GeneratedDocumentRepository generatedDocumentRepository
     ) throws IOException {
 
+        this.generatedDocumentRepository = generatedDocumentRepository;
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.messageMapper = messageMapper;
@@ -148,6 +152,8 @@ public class ChatServiceImpl implements ChatService {
                                 "conversationId == '" + conversation.getId() + "'"
                         )
                 )
+                // Lets DocumentTools save documents to this conversation.
+                .toolContext(Map.of("conversationId", conversation.getId()))
                 .call()
                 .chatClientResponse();
 
@@ -174,6 +180,12 @@ public class ChatServiceImpl implements ChatService {
         MessageResponse response = messageMapper.toResponse(savedAnswer);
         response.setSources(sources);
         response.setImageUrl(userMessage.getImageUrl());
+        response.setDocuments(generatedDocumentRepository
+                .findByConversationIdAndCreatedAtGreaterThanEqual(
+                        conversation.getId(), userMessage.getCreatedAt())
+                .stream()
+                .map(GeneratedDocumentResponse::from)
+                .toList());
         return response;
     }
 

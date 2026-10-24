@@ -7,6 +7,7 @@ public interface GeneratedDocumentService {
     GeneratedDocument createDocument(
             String title,
             String html,
-            String format
+            String format,
+            Long conversationId
     );
 }

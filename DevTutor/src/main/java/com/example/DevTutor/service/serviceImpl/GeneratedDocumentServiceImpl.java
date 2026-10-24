@@ -1,6 +1,7 @@
 package com.example.DevTutor.service.serviceImpl;
 
 import com.example.DevTutor.entity.GeneratedDocument;
+import com.example.DevTutor.repository.ConversationRepository;
 import com.example.DevTutor.repository.GeneratedDocumentRepository;
 import com.example.DevTutor.service.serviceInterface.GeneratedDocumentService;
 
@@ -22,11 +23,13 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class GeneratedDocumentServiceImpl implements GeneratedDocumentService {
     private final GeneratedDocumentRepository repository;
+    private final ConversationRepository conversationRepository;
     @Override
     public GeneratedDocument createDocument(
             String title,
             String html,
-            String format
+            String format,
+            Long conversationId
     ) {
 
         if (title == null || title.isBlank()
@@ -44,6 +47,8 @@ public class GeneratedDocumentServiceImpl implements GeneratedDocumentService {
         String normalizedFormat = format.trim()
                 .toUpperCase(Locale.ROOT);
         html = html.replace("&nbsp;", "&#160;");
+        // Escape any '&' that does not start an entity like &amp; or &#160;
+        html = html.replaceAll("&(?!#?\\w+;)", "&amp;");
         byte[] data = switch (normalizedFormat) {
             case "PDF" -> generatePdf(html);
             case "DOCX" -> generateWord(html);
@@ -57,6 +62,7 @@ public class GeneratedDocumentServiceImpl implements GeneratedDocumentService {
         document.setTitle(title);
         document.setFormat(normalizedFormat);
         document.setData(data);
+        document.setConversation(conversationRepository.getReferenceById(conversationId));
 
         return repository.save(document);
     }

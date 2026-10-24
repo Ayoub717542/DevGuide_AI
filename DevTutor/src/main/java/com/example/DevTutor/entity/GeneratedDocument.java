@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Setter
@@ -22,4 +24,16 @@ public class GeneratedDocument {
     @Lob
     @Column(columnDefinition = "LONGBLOB")
     private byte[] data;
+
+    // Null for documents created before ownership was added.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "conversation_id")
+    private Conversation conversation;
+
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    private void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }

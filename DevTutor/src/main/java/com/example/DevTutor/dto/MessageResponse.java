@@ -21,4 +21,5 @@ public class MessageResponse {
     private Long conversationId;
     private List<SourceResponse> sources;
     private String imageUrl;
+    private List<GeneratedDocumentResponse> documents;
 }
