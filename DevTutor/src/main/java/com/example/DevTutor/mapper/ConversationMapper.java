@@ -6,6 +6,8 @@ import com.example.DevTutor.entity.Conversation;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+import java.util.List;
+
 @Mapper(componentModel = "spring")
 public interface ConversationMapper {
 
@@ -16,4 +18,6 @@ public interface ConversationMapper {
 
     @Mapping(source = "createdBy.id", target = "createdById")
     ConversationResponse toResponse(Conversation conversation);
+
+    List<ConversationResponse> toResponses(List<Conversation> conversations);
 }

@@ -4,11 +4,9 @@ import com.example.DevTutor.dto.*;
 import com.example.DevTutor.entity.Conversation;
 import com.example.DevTutor.entity.Message;
 import com.example.DevTutor.enums.MessageRole;
-import com.example.DevTutor.mapper.ConversationMapper;
 import com.example.DevTutor.mapper.MessageMapper;
 import com.example.DevTutor.repository.ConversationRepository;
 import com.example.DevTutor.repository.MessageRepository;
-import com.example.DevTutor.repository.UserRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.example.DevTutor.service.serviceInterface.ChatService;
 import org.springframework.ai.chat.client.ChatClient;
@@ -43,10 +41,8 @@ public class ChatServiceImpl implements ChatService {
     private final ChatClient chatClient;
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
-    private final ConversationMapper conversationMapper;
     private final MessageMapper messageMapper;
     private final Cloudinary cloudinary;
-    private final UserRepository userRepository;
 
     public ChatServiceImpl(
             ToolCallbackProvider mcpTools,
@@ -56,15 +52,11 @@ public class ChatServiceImpl implements ChatService {
             VectorStore vectorStore,
             ConversationRepository conversationRepository,
             MessageRepository messageRepository,
-            ConversationMapper conversationMapper,
-            MessageMapper messageMapper, Cloudinary cloudinary,
-            UserRepository userRepository
+            MessageMapper messageMapper, Cloudinary cloudinary
     ) throws IOException {
 
-        this.userRepository = userRepository;
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
-        this.conversationMapper = conversationMapper;
         this.messageMapper = messageMapper;
         this.cloudinary = cloudinary;
 
@@ -214,25 +206,16 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public ConversationResponse createConversation(
-            CreateConversationRequest request) {
-
-        if (request.getTitle() == null || request.getTitle().isBlank()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Title is required");
-        }
-
-        Conversation conversation = conversationMapper.toEntity(request);
-        conversation.setCreatedBy(userRepository.findByEmail(currentUserEmail())
+    public List<MessageResponse> getMessages(Long conversationId) {
+        // Only the creator can read a conversation (admins included).
+        Conversation conversation = conversationRepository
+                .findByIdAndCreatedByEmail(conversationId, currentUserEmail())
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.UNAUTHORIZED,
-                        "User not found")));
+                        HttpStatus.NOT_FOUND,
+                        "Conversation not found"));
 
-        Conversation savedConversation =
-                conversationRepository.save(conversation);
-
-        return conversationMapper.toResponse(savedConversation);
+        return messageMapper.toResponses(
+                messageRepository.findByConversationIdOrderByCreatedAtAscIdAsc(conversation.getId()));
     }
 
     private static String currentUserEmail() {

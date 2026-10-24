@@ -8,8 +8,9 @@ import com.example.DevTutor.entity.Conversation;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 
 public interface ChatService {
     MessageResponse reply(MessageRequest request, MultipartFile file);
-    ConversationResponse createConversation(CreateConversationRequest request);
+    List<MessageResponse> getMessages(Long conversationId);
 }

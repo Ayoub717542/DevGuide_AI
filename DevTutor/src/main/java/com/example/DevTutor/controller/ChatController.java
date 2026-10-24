@@ -8,6 +8,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor
@@ -27,11 +29,9 @@ public class ChatController {
         return chatService.reply(request, file);
     }
 
-    @PostMapping("/conversations")
+    @GetMapping("/conversations/{id}/messages")
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public ConversationResponse createConversation(
-            @RequestBody CreateConversationRequest request) {
-
-        return chatService.createConversation(request);
+    public List<MessageResponse> getMessages(@PathVariable Long id) {
+        return chatService.getMessages(id);
     }
 }
