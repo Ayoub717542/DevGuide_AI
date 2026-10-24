@@ -8,6 +8,7 @@ import com.example.DevTutor.entity.Message;
 import com.example.DevTutor.mapper.ConversationMapper;
 import com.example.DevTutor.repository.ConversationRepository;
 import com.example.DevTutor.repository.MessageRepository;
+import com.example.DevTutor.repository.UploadedDocumentRepository;
 import com.example.DevTutor.repository.UserRepository;
 import com.example.DevTutor.service.serviceInterface.ConversationService;
 import com.cloudinary.Cloudinary;
@@ -33,6 +34,7 @@ public class ConversationServiceImpl implements ConversationService {
     private final ConversationMapper conversationMapper;
     private final UserRepository userRepository;
     private final MessageRepository messageRepository;
+    private final UploadedDocumentRepository uploadedDocumentRepository;
     private final VectorStore vectorStore;
     private final ChatMemory chatMemory;
     private final Cloudinary cloudinary;
@@ -86,11 +88,9 @@ public class ConversationServiceImpl implements ConversationService {
         List<Message> messages = messageRepository
                 .findByConversationIdOrderByCreatedAtAscIdAsc(id);
 
-        // Remove the conversation's PDF chunks and AI memory.
         vectorStore.delete("conversationId == '" + id + "'");
         chatMemory.clear(id.toString());
 
-        // Remove attached images; a failure here should not block the delete.
         for (Message message : messages) {
             if (message.getImagePublicId() != null) {
                 try {
@@ -101,11 +101,11 @@ public class ConversationServiceImpl implements ConversationService {
             }
         }
 
+        uploadedDocumentRepository.deleteByConversationId(id);
         messageRepository.deleteAll(messages);
         conversationRepository.delete(conversation);
     }
 
-    // Only the creator can change a conversation (admins included).
     private Conversation findOwnConversation(Long id) {
         return conversationRepository
                 .findByIdAndCreatedByEmail(id, currentUserEmail())

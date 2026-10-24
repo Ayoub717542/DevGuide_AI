@@ -1,6 +1,9 @@
 package com.example.DevTutor.service.serviceImpl;
 
+import com.example.DevTutor.entity.Conversation;
+import com.example.DevTutor.entity.UploadedDocument;
 import com.example.DevTutor.repository.ConversationRepository;
+import com.example.DevTutor.repository.UploadedDocumentRepository;
 import com.example.DevTutor.service.serviceInterface.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.document.Document;
@@ -23,16 +26,14 @@ public class DocumentServiceImpl implements DocumentService {
 
     private final VectorStore vectorStore;
     private final ConversationRepository conversationRepository;
+    private final UploadedDocumentRepository uploadedDocumentRepository;
 
     @Override
     public DocumentUploadResponse uploadPdf(Long conversationId, MultipartFile file){
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Please select a PDF file.");
         }
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        if (conversationRepository.findByIdAndCreatedByEmail(conversationId, email).isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Conversation not found");
-        }
+        Conversation conversation = findOwnConversation(conversationId);
         String filename = file.getOriginalFilename();
         if (filename == null || !filename.toLowerCase().endsWith(".pdf")) {
             throw new IllegalArgumentException("Only PDF files are allowed.");
@@ -77,11 +78,58 @@ public class DocumentServiceImpl implements DocumentService {
 
         vectorStore.add(chunks); //Generates embeddings and stores the passages
 
-        return new DocumentUploadResponse(
-                documentId,
-                file.getOriginalFilename(),
-                chunks.size()
-        );
+        // Keep a record so the conversation can list its PDFs.
+        UploadedDocument upload = new UploadedDocument();
+        upload.setDocumentId(documentId);
+        upload.setFilename(file.getOriginalFilename());
+        upload.setChunksStored(chunks.size());
+        upload.setConversation(conversation);
+        uploadedDocumentRepository.save(upload);
+
+        return toResponse(upload);
         //Returns how many chunks were stored
+    }
+
+    @Override
+    public List<DocumentUploadResponse> getUploads(Long conversationId) {
+        findOwnConversation(conversationId);
+
+        return uploadedDocumentRepository
+                .findByConversationIdOrderByCreatedAtAsc(conversationId)
+                .stream()
+                .map(DocumentServiceImpl::toResponse)
+                .toList();
+    }
+
+    @Override
+    public void deleteUpload(String documentId) {
+        UploadedDocument upload = uploadedDocumentRepository
+                .findByDocumentIdAndConversationCreatedByEmail(documentId, currentUserEmail())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Document not found"));
+
+        // Remove the PDF's chunks first, so a Qdrant failure keeps the record.
+        vectorStore.delete("documentId == '" + upload.getDocumentId() + "'");
+        uploadedDocumentRepository.delete(upload);
+    }
+
+    // Only the creator can use a conversation (admins included).
+    private Conversation findOwnConversation(Long conversationId) {
+        return conversationRepository
+                .findByIdAndCreatedByEmail(conversationId, currentUserEmail())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Conversation not found"));
+    }
+
+    private static DocumentUploadResponse toResponse(UploadedDocument upload) {
+        return new DocumentUploadResponse(
+                upload.getDocumentId(),
+                upload.getFilename(),
+                upload.getChunksStored()
+        );
+    }
+
+    private static String currentUserEmail() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 }
