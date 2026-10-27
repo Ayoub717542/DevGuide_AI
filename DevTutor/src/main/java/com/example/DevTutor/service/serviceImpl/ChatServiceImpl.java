@@ -52,6 +52,13 @@ public class ChatServiceImpl implements ChatService {
     private final QuizResultRepository quizResultRepository;
     private final String guide;
 
+    private static final String HINT_MODE = """
+
+
+            Hint mode is on: do not give the full answer or the full code.
+            Give one small hint or ask a guiding question so the learner finds the answer.
+            """;
+
     public ChatServiceImpl(
             ToolCallbackProvider mcpTools,
             DocumentTools documentTools,
@@ -142,7 +149,7 @@ public class ChatServiceImpl implements ChatService {
         messageRepository.save(userMessage);
 
         ChatClientResponse aiResponse = chatClient.prompt()
-                .system(guide + quizScores())
+                .system(guide + quizScores() + (request.isHintMode() ? HINT_MODE : ""))
                 .user(u -> {
                     u.text(request.getContent());
                     if (media != null) {
