@@ -28,6 +28,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import com.cloudinary.Cloudinary;
 import java.util.Map;
+import com.example.DevTutor.tools.CodeRunnerTools;
 import com.example.DevTutor.tools.DocumentTools;
 
 import java.io.IOException;
@@ -62,6 +63,7 @@ public class ChatServiceImpl implements ChatService {
     public ChatServiceImpl(
             ToolCallbackProvider mcpTools,
             DocumentTools documentTools,
+            CodeRunnerTools codeRunnerTools,
             ChatClient.Builder builder,
             ChatMemory chatMemory,
             VectorStore vectorStore,
@@ -84,7 +86,7 @@ public class ChatServiceImpl implements ChatService {
 
         this.chatClient = builder
                 .defaultSystem(guide)
-                .defaultTools(documentTools).defaultTools(mcpTools)
+                .defaultTools(documentTools, codeRunnerTools).defaultTools(mcpTools)
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build(),
 
