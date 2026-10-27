@@ -9,4 +9,6 @@ public interface QuizResultRepository
         extends JpaRepository<QuizResult, Long> {
 
     List<QuizResult> findTop5ByUserEmailOrderByCreatedAtDesc(String userEmail);
+
+    List<QuizResult> findByUserEmailOrderByCreatedAtDesc(String userEmail);
 }
