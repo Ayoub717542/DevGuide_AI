@@ -36,7 +36,11 @@ public class QuizServiceImpl implements QuizService {
                         "Conversation not found"));
 
 
-        String lesson = chatMemory.get(conversationId.toString()).stream()
+        var messages = chatMemory.get(conversationId.toString());
+
+        // Only the last 6 messages: the quiz is about the recent lesson.
+        String lesson = messages.stream()
+                .skip(Math.max(0, messages.size() - 6))
                 .map(m -> m.getMessageType() + ": " + m.getText())
                 .collect(Collectors.joining("\n"));
 
@@ -48,7 +52,7 @@ public class QuizServiceImpl implements QuizService {
 
         return chatClient.prompt()
                 .user("""
-                        Write a multiple-choice quiz of 3 to 5 questions
+                        Write a multiple-choice quiz of exactly 3 questions
                         about what was taught in this lesson.
                         Each question has 4 options and one correct answer.
                         correctIndex starts at 0.
