@@ -1,7 +1,10 @@
 package com.example.DevTutor.service.serviceImpl;
 
 import com.example.DevTutor.dto.QuizResponse;
+import com.example.DevTutor.dto.QuizResultRequest;
+import com.example.DevTutor.entity.QuizResult;
 import com.example.DevTutor.repository.ConversationRepository;
+import com.example.DevTutor.repository.QuizResultRepository;
 import com.example.DevTutor.service.serviceInterface.QuizService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -18,27 +21,24 @@ public class QuizServiceImpl implements QuizService {
     private final ChatClient chatClient;
     private final ChatMemory chatMemory;
     private final ConversationRepository conversationRepository;
+    private final QuizResultRepository quizResultRepository;
 
     public QuizServiceImpl(ChatClient.Builder builder,
                            ChatMemory chatMemory,
-                           ConversationRepository conversationRepository) {
+                           ConversationRepository conversationRepository,
+                           QuizResultRepository quizResultRepository) {
         this.chatClient = builder.build();
         this.chatMemory = chatMemory;
         this.conversationRepository = conversationRepository;
+        this.quizResultRepository = quizResultRepository;
     }
 
     @Override
     public QuizResponse generateQuiz(Long conversationId) {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        conversationRepository.findByIdAndCreatedByEmail(conversationId, email)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Conversation not found"));
-
+        checkOwner(conversationId);
 
         var messages = chatMemory.get(conversationId.toString());
 
-        // Only the last 6 messages: the quiz is about the recent lesson.
         String lesson = messages.stream()
                 .skip(Math.max(0, messages.size() - 6))
                 .map(m -> m.getMessageType() + ": " + m.getText())
@@ -62,5 +62,34 @@ public class QuizServiceImpl implements QuizService {
                         """ + lesson)
                 .call()
                 .entity(QuizResponse.class);
+    }
+
+    @Override
+    public void saveResult(Long conversationId, QuizResultRequest request) {
+        String email = checkOwner(conversationId);
+
+        if (request.total() <= 0
+                || request.score() < 0
+                || request.score() > request.total()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Score must be between 0 and total.");
+        }
+
+        QuizResult result = new QuizResult();
+        result.setTopic(request.topic());
+        result.setScore(request.score());
+        result.setTotal(request.total());
+        result.setUserEmail(email);
+        quizResultRepository.save(result);
+    }
+
+    private String checkOwner(Long conversationId) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        conversationRepository.findByIdAndCreatedByEmail(conversationId, email)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Conversation not found"));
+        return email;
     }
 }
