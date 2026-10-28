@@ -18,8 +18,9 @@ public class LearnerNoteTools {
 
     @Tool(description = """
             Save a short note about how the user learns, so you remember it in future conversations.
-            Only save new and important facts, for example a topic they struggle with,
-            a topic they already know, or how they like explanations.
+            Call this tool whenever the user says they struggle with, are confused by,
+            already know, or prefer something about learning or coding.
+            Then answer the user normally.
             Do not save personal or private information.
             Do not save a note you already have.
             """)

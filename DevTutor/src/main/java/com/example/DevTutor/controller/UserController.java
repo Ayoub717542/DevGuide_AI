@@ -5,6 +5,8 @@ import com.example.DevTutor.dto.UpdateUserRequest;
 import com.example.DevTutor.dto.UserResponse;
 import com.example.DevTutor.entity.User;
 import com.example.DevTutor.mapper.UserMapper;
+import com.example.DevTutor.entity.LearnerNote;
+import com.example.DevTutor.repository.LearnerNoteRepository;
 import com.example.DevTutor.repository.QuizResultRepository;
 import com.example.DevTutor.repository.UserRepository;
 import jakarta.validation.Valid;
@@ -26,6 +28,7 @@ public class UserController {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final QuizResultRepository quizResultRepository;
+    private final LearnerNoteRepository learnerNoteRepository;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -51,6 +54,15 @@ public class UserController {
         return quizResultRepository.findByUserEmailOrderByCreatedAtDesc(authentication.getName())
                 .stream()
                 .map(QuizResultResponse::from)
+                .toList();
+    }
+
+    @GetMapping("/me/notes")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    public List<String> notes(Authentication authentication) {
+        return learnerNoteRepository.findTop10ByUserEmailOrderByCreatedAtDesc(authentication.getName())
+                .stream()
+                .map(LearnerNote::getNote)
                 .toList();
     }
 

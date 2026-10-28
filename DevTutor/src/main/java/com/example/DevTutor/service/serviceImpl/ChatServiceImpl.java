@@ -3,12 +3,14 @@ package com.example.DevTutor.service.serviceImpl;
 import com.example.DevTutor.dto.*;
 import com.example.DevTutor.entity.Conversation;
 import com.example.DevTutor.entity.Message;
+import com.example.DevTutor.entity.LearnerNote;
 import com.example.DevTutor.entity.QuizResult;
 import com.example.DevTutor.enums.MessageRole;
 import com.example.DevTutor.mapper.MessageMapper;
 import com.example.DevTutor.repository.ConversationRepository;
 import com.example.DevTutor.repository.GeneratedDocumentRepository;
 import com.example.DevTutor.repository.MessageRepository;
+import com.example.DevTutor.repository.LearnerNoteRepository;
 import com.example.DevTutor.repository.QuizResultRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.example.DevTutor.service.serviceInterface.ChatService;
@@ -52,6 +54,7 @@ public class ChatServiceImpl implements ChatService {
     private final Cloudinary cloudinary;
     private final GeneratedDocumentRepository generatedDocumentRepository;
     private final QuizResultRepository quizResultRepository;
+    private final LearnerNoteRepository learnerNoteRepository;
     private final String guide;
 
     private static final String HINT_MODE = """
@@ -73,11 +76,13 @@ public class ChatServiceImpl implements ChatService {
             MessageRepository messageRepository,
             MessageMapper messageMapper, Cloudinary cloudinary,
             GeneratedDocumentRepository generatedDocumentRepository,
-            QuizResultRepository quizResultRepository
+            QuizResultRepository quizResultRepository,
+            LearnerNoteRepository learnerNoteRepository
     ) throws IOException {
 
         this.generatedDocumentRepository = generatedDocumentRepository;
         this.quizResultRepository = quizResultRepository;
+        this.learnerNoteRepository = learnerNoteRepository;
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.messageMapper = messageMapper;
@@ -153,7 +158,7 @@ public class ChatServiceImpl implements ChatService {
         messageRepository.save(userMessage);
 
         ChatClientResponse aiResponse = chatClient.prompt()
-                .system(guide + quizScores() + (request.isHintMode() ? HINT_MODE : ""))
+                .system(guide + quizScores() + learnerNotes() + (request.isHintMode() ? HINT_MODE : ""))
                 .user(u -> {
                     u.text(request.getContent());
                     if (media != null) {
@@ -207,6 +212,20 @@ public class ChatServiceImpl implements ChatService {
                 .map(GeneratedDocumentResponse::from)
                 .toList());
         return response;
+    }
+
+    private String learnerNotes() {
+        List<LearnerNote> notes = learnerNoteRepository
+                .findTop10ByUserEmailOrderByCreatedAtDesc(currentUserEmail());
+        if (notes.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder text = new StringBuilder("\n\nWhat you know about this learner:\n");
+        for (LearnerNote note : notes) {
+            text.append("- ").append(note.getNote()).append("\n");
+        }
+        return text.toString();
     }
 
     private String quizScores() {
