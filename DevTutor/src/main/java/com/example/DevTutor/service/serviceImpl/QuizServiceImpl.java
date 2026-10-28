@@ -80,10 +80,14 @@ public class QuizServiceImpl implements QuizService {
                     "Score must be between 0 and total.");
         }
 
+        saveScore(request.topic(), request.score(), request.total(), email);
+    }
+
+    private void saveScore(String topic, int score, int total, String email) {
         QuizResult result = new QuizResult();
-        result.setTopic(request.topic());
-        result.setScore(request.score());
-        result.setTotal(request.total());
+        result.setTopic(topic);
+        result.setScore(score);
+        result.setTotal(total);
         result.setUserEmail(email);
         quizResultRepository.save(result);
     }
@@ -153,7 +157,11 @@ public class QuizServiceImpl implements QuizService {
                     "Write some code before submitting.");
         }
 
-        return challengeRunner.run(challenge.getTestCode(), code);
+        ChallengeResult result = challengeRunner.run(challenge.getTestCode(), code);
+        if (result.total() > 0) {
+            saveScore(challenge.getConcept(), result.passed(), result.total(), email);
+        }
+        return result;
     }
 
     private String lesson(Long conversationId) {
