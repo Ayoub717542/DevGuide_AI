@@ -2,8 +2,11 @@ package com.example.DevTutor.controller;
 
 import com.example.DevTutor.dto.ConversationResponse;
 import com.example.DevTutor.dto.CreateConversationRequest;
+import com.example.DevTutor.dto.QuizResponse;
+import com.example.DevTutor.dto.QuizResultRequest;
 import com.example.DevTutor.dto.UpdateConversationRequest;
 import com.example.DevTutor.service.serviceInterface.ConversationService;
+import com.example.DevTutor.service.serviceInterface.QuizService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +20,7 @@ import java.util.List;
 public class ConversationController {
 
     private final ConversationService conversationService;
+    private final QuizService quizService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
@@ -46,5 +50,21 @@ public class ConversationController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteConversation(@PathVariable Long id) {
         conversationService.deleteConversation(id);
+    }
+
+    @PostMapping("/{id}/quiz")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    public QuizResponse generateQuiz(@PathVariable Long id) {
+        return quizService.generateQuiz(id);
+    }
+
+    @PostMapping("/{id}/quiz/result")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void saveQuizResult(
+            @PathVariable Long id,
+            @RequestBody QuizResultRequest request) {
+
+        quizService.saveResult(id, request);
     }
 }

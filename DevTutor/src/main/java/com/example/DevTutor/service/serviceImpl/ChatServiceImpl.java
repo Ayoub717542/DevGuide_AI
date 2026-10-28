@@ -3,11 +3,13 @@ package com.example.DevTutor.service.serviceImpl;
 import com.example.DevTutor.dto.*;
 import com.example.DevTutor.entity.Conversation;
 import com.example.DevTutor.entity.Message;
+import com.example.DevTutor.entity.QuizResult;
 import com.example.DevTutor.enums.MessageRole;
 import com.example.DevTutor.mapper.MessageMapper;
 import com.example.DevTutor.repository.ConversationRepository;
 import com.example.DevTutor.repository.GeneratedDocumentRepository;
 import com.example.DevTutor.repository.MessageRepository;
+import com.example.DevTutor.repository.QuizResultRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.example.DevTutor.service.serviceInterface.ChatService;
 import org.springframework.ai.chat.client.ChatClient;
@@ -26,6 +28,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import com.cloudinary.Cloudinary;
 import java.util.Map;
+import com.example.DevTutor.tools.CodeRunnerTools;
 import com.example.DevTutor.tools.DocumentTools;
 
 import java.io.IOException;
@@ -47,31 +50,43 @@ public class ChatServiceImpl implements ChatService {
     private final MessageMapper messageMapper;
     private final Cloudinary cloudinary;
     private final GeneratedDocumentRepository generatedDocumentRepository;
+    private final QuizResultRepository quizResultRepository;
+    private final String guide;
+
+    private static final String HINT_MODE = """
+
+
+            Hint mode is on: do not give the full answer or the full code.
+            Give one small hint or ask a guiding question so the learner finds the answer.
+            """;
 
     public ChatServiceImpl(
             ToolCallbackProvider mcpTools,
             DocumentTools documentTools,
+            CodeRunnerTools codeRunnerTools,
             ChatClient.Builder builder,
             ChatMemory chatMemory,
             VectorStore vectorStore,
             ConversationRepository conversationRepository,
             MessageRepository messageRepository,
             MessageMapper messageMapper, Cloudinary cloudinary,
-            GeneratedDocumentRepository generatedDocumentRepository
+            GeneratedDocumentRepository generatedDocumentRepository,
+            QuizResultRepository quizResultRepository
     ) throws IOException {
 
         this.generatedDocumentRepository = generatedDocumentRepository;
+        this.quizResultRepository = quizResultRepository;
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.messageMapper = messageMapper;
         this.cloudinary = cloudinary;
 
-        String guide = new ClassPathResource("devtutor-guide.txt")
+        this.guide = new ClassPathResource("devtutor-guide.txt")
                 .getContentAsString(StandardCharsets.UTF_8);
 
         this.chatClient = builder
                 .defaultSystem(guide)
-                .defaultTools(documentTools).defaultTools(mcpTools)
+                .defaultTools(documentTools, codeRunnerTools).defaultTools(mcpTools)
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build(),
 
@@ -136,6 +151,7 @@ public class ChatServiceImpl implements ChatService {
         messageRepository.save(userMessage);
 
         ChatClientResponse aiResponse = chatClient.prompt()
+                .system(guide + quizScores() + (request.isHintMode() ? HINT_MODE : ""))
                 .user(u -> {
                     u.text(request.getContent());
                     if (media != null) {
@@ -189,7 +205,23 @@ public class ChatServiceImpl implements ChatService {
         return response;
     }
 
-    // One source per file and page range, without duplicates.
+    private String quizScores() {
+        List<QuizResult> results = quizResultRepository
+                .findTop5ByUserEmailOrderByCreatedAtDesc(currentUserEmail());
+        if (results.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder text = new StringBuilder("\n\nThe learner's recent quiz scores:\n");
+        for (QuizResult result : results) {
+            text.append("- ").append(result.getTopic()).append(": ")
+                    .append(result.getScore()).append("/").append(result.getTotal())
+                    .append("\n");
+        }
+        text.append("Spend more time on topics with low scores.");
+        return text.toString();
+    }
+
     private static List<SourceResponse> toSources(Object retrieved) {
         if (!(retrieved instanceof List<?> documents)) {
             return List.of();
@@ -208,7 +240,6 @@ public class ChatServiceImpl implements ChatService {
                         PagePdfDocumentReader.METADATA_START_PAGE_NUMBER));
                 Integer endPage = toPage(metadata.get(
                         PagePdfDocumentReader.METADATA_END_PAGE_NUMBER));
-                // A chunk on a single page has no end page.
                 if (endPage == null) {
                     endPage = startPage;
                 }
@@ -225,7 +256,6 @@ public class ChatServiceImpl implements ChatService {
                 .toList();
     }
 
-    // Qdrant may return page numbers as Long or Double.
     private static Integer toPage(Object value) {
         return value instanceof Number number ? number.intValue() : null;
     }
@@ -247,7 +277,6 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public List<MessageResponse> getMessages(Long conversationId) {
-        // Only the creator can read a conversation (admins included).
         Conversation conversation = conversationRepository
                 .findByIdAndCreatedByEmail(conversationId, currentUserEmail())
                 .orElseThrow(() -> new ResponseStatusException(

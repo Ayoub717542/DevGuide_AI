@@ -22,9 +22,10 @@ public class ChatController {
     public MessageResponse reply(
             @RequestParam("conversationId") Long conversationId,
             @RequestParam("content") String content,
-            @RequestParam(value = "file", required = false) MultipartFile file) {
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestParam(value = "hintMode", defaultValue = "false") boolean hintMode) {
 
-        MessageRequest request = new MessageRequest(conversationId, content);
+        MessageRequest request = new MessageRequest(conversationId, content, hintMode);
 
         return chatService.reply(request, file);
     }

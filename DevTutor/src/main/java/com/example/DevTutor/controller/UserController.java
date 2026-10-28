@@ -1,9 +1,11 @@
 package com.example.DevTutor.controller;
 
+import com.example.DevTutor.dto.QuizResultResponse;
 import com.example.DevTutor.dto.UpdateUserRequest;
 import com.example.DevTutor.dto.UserResponse;
 import com.example.DevTutor.entity.User;
 import com.example.DevTutor.mapper.UserMapper;
+import com.example.DevTutor.repository.QuizResultRepository;
 import com.example.DevTutor.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ public class UserController {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final QuizResultRepository quizResultRepository;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -40,6 +43,15 @@ public class UserController {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "User not found")));
+    }
+
+    @GetMapping("/me/progress")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    public List<QuizResultResponse> progress(Authentication authentication) {
+        return quizResultRepository.findByUserEmailOrderByCreatedAtDesc(authentication.getName())
+                .stream()
+                .map(QuizResultResponse::from)
+                .toList();
     }
 
     @PutMapping("/{id}")
