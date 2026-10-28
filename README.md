@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="docs/hero.svg" alt="DevGuide AI: an AI tutor that teaches you to code, step by step, from real documentation" width="100%"/>
+<img src="docs/hero.svg" alt="DevGuide Agent: an AI tutor agent that teaches you to code, tests your skills and remembers how you learn" width="100%"/>
 
-<sub>An AI programming tutor for developers and learners, built with Spring Boot, Spring AI and React.</sub>
+<sub>An AI programming tutor agent for developers and learners, built with Spring Boot, Spring AI and React.</sub>
 
 <br/><br/>
 
@@ -12,6 +12,7 @@
 <img src="https://img.shields.io/badge/Gemini-chat_·_vision_·_embeddings-8E75B2?style=flat-square&logo=googlegemini&logoColor=white" alt="Gemini"/>
 <img src="https://img.shields.io/badge/MCP-Context7_·_GitHub-111827?style=flat-square" alt="MCP"/>
 <img src="https://img.shields.io/badge/Qdrant-vector_store-DC244C?style=flat-square" alt="Qdrant"/>
+<img src="https://img.shields.io/badge/Piston-code_sandbox-0F766E?style=flat-square" alt="Piston"/>
 <img src="https://img.shields.io/badge/MySQL-8-4479A1?style=flat-square&logo=mysql&logoColor=white" alt="MySQL"/>
 <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19"/>
 
@@ -23,7 +24,9 @@
 
 ### Overview
 
-Most chatbots hand you an answer. **DevGuide AI teaches**, and it shows its work. It explains one concept at a time with small code examples, checks **current library docs** before answering, reads **your own PDFs and screenshots**, and tells you exactly where each answer came from.
+Most chatbots hand you an answer. **DevGuide Agent teaches**, and it shows its work. It explains one concept at a time with small code examples, checks **current library docs** before answering, reads **your own PDFs and screenshots**, and tells you exactly where each answer came from.
+
+It is an **agent**, not just a chatbot: it decides by itself when to check the docs, **run its code in a sandbox**, generate a cheat sheet or **write a note about how you learn**. Then it **tests you** with quizzes and coding challenges graded by hidden tests, and adapts the next lesson to your weak topics.
 
 ```http
 POST /api/chat
@@ -73,6 +76,32 @@ Every conversation is private to its owner and remembered across restarts, so yo
 
 </td>
 </tr>
+<tr>
+<td width="50%" valign="top">
+
+**Runs its own code (Piston)**<br/>
+<sub>The tutor runs Java and Python examples in a self-hosted sandbox and shows the real output, not a guess.</sub>
+
+**"Prove it" challenges**<br/>
+<sub>A coding exercise from your lesson, graded by hidden tests. The AI's own solution must pass them first, so a broken test never reaches you.</sub>
+
+**Quizzes and progress**<br/>
+<sub>3-question quizzes from the lesson; scores are saved per concept and the tutor spends more time on weak topics.</sub>
+
+</td>
+<td width="50%" valign="top">
+
+**Learns about you**<br/>
+<sub>The AI saves short notes like "struggles with generics" and reads them in every new conversation. You can list and delete them.</sub>
+
+**Hint mode**<br/>
+<sub>One switch and the tutor gives hints and guiding questions instead of the full answer.</sub>
+
+**Backup model**<br/>
+<sub>If Gemini is overloaded, a second Gemini model answers automatically, and the switch is logged.</sub>
+
+</td>
+</tr>
 </table>
 
 <br/>
@@ -87,6 +116,7 @@ flowchart LR
     API --> LLM["Gemini<br/><sub>chat · vision · embeddings</sub>"]
     API --> MCP["MCP tools<br/><sub>Context7 · GitHub</sub>"]
     API --> CDN["Cloudinary<br/><sub>images</sub>"]
+    API --> PST["Piston<br/><sub>code sandbox</sub>"]
 
     classDef ui fill:#06B6D4,stroke:#0E7490,color:#fff
     classDef api fill:#4F46E5,stroke:#3730A3,color:#fff
@@ -95,18 +125,19 @@ flowchart LR
     class UI ui
     class API api
     class LLM,MCP ai
-    class DB,VS,CDN store
+    class DB,VS,CDN,PST store
 ```
 
 <details>
 <summary><b>How a message flows</b></summary>
 <br/>
 
-1. The React app sends the message (and an optional image) with the user's JWT.
+1. The React app sends the message (and an optional image) with the user's JWT, plus `hintMode` if it's on.
 2. Spring Security validates the token and role; the service checks the conversation belongs to that user.
-3. `MessageChatMemoryAdvisor` adds the last 20 messages; `QuestionAnswerAdvisor` adds the best-matching chunks from **this conversation's** PDFs only.
-4. Gemini answers, calling Context7, GitHub or `createDocument` when it needs them.
-5. Both messages are saved, and the answer is returned with its `sources` (file + pages) and any `documents` it generated.
+3. The system prompt is built from the tutor guide, the user's recent **quiz scores** and the AI's **notes about the learner** (plus the hint-mode rule).
+4. `MessageChatMemoryAdvisor` adds the last 20 messages; `QuestionAnswerAdvisor` adds the best-matching chunks from **this conversation's** PDFs only.
+5. Gemini answers, calling Context7, GitHub, `runCode`, `createDocument` or `saveLearnerNote` when it needs them. If the main model fails, the backup model answers.
+6. Both messages are saved, and the answer is returned with its `sources` (file + pages) and any `documents` it generated.
 
 </details>
 
@@ -122,7 +153,11 @@ A few design decisions worth knowing if you read or extend the code:
 | **RAG isolation** | Each chunk carries `conversationId` and `documentId` metadata; retrieval uses a filter expression so conversations never leak into each other. | `DocumentServiceImpl`, `ChatServiceImpl` |
 | **Citations** | Chunks keep the PDF reader's `page_number` / `end_page_number`; `toSources()` deduplicates them into one entry per file and page range. | `ChatServiceImpl.toSources` |
 | **Tool context** | `createDocument` gets the `conversationId` through Spring AI's `ToolContext`, invisible to the model, so generated files are owned by the right user. | `DocumentTools` |
-| **Tool errors** | Gemini only accepts JSON tool results, so a custom `ToolExecutionExceptionProcessor` turns MCP failures into a JSON error the model can recover from, instead of a 500. | `AiConfig` |
+| **Tool errors** | Gemini only accepts JSON tool results, so a custom `ToolExecutionExceptionProcessor` turns tool failures into a JSON error the model can recover from, instead of a 500, and logs them. | `AiConfig` |
+| **Learner notes** | `saveLearnerNote` gets the user's email through `ToolContext`, never from the model, so the AI can't write notes for another user. | `LearnerNoteTools` |
+| **Backup model** | A `@Primary` `ChatModel` wraps Gemini: on any error it retries once with `app.ai.fallback-model`, keeping the same prompt, tools and memory, and logs a `WARN`. Chat and quiz both use it. | `FallbackChatConfig` |
+| **Trusted challenges** | A challenge is only saved if the AI's reference solution passes its own hidden tests (2 tries, else `502`). Tests and solution are never returned or added to the chat history. | `QuizServiceImpl`, `ChallengeRunner` |
+| **Cheat-proof grading** | Each run gets a random nonce; only the final `RESULT-<nonce> passed/total` line counts, so printing `PASS` can't fake a score. Compile errors and timeouts are reported as such, not as `0/3`. | `ChallengeRunner` |
 | **Strict XHTML** | The PDF renderer parses XML: bare `&` are escaped automatically, and the tool prompt tells the model to escape `<` and `>` in code. | `GeneratedDocumentServiceImpl`, `DocumentTools` |
 | **Clean deletes** | Deleting a conversation removes its messages, AI memory, Qdrant chunks, Cloudinary images, PDF records and generated files. | `ConversationServiceImpl` |
 | **Errors** | One JSON shape for every error, with Gemini, Qdrant and upload failures mapped to clear status codes. | `GlobalExceptionHandler` |
@@ -138,6 +173,7 @@ A few design decisions worth knowing if you read or extend the code:
 | JavaScript (ES modules) · ESLint | Spring Data JPA · MapStruct · Lombok | MySQL 8 · JDBC chat memory |
 | | springdoc OpenAPI (Swagger UI) | MCP client: Context7, GitHub |
 | | OpenHTMLtoPDF · docx4j | Cloudinary |
+| | | Piston (self-hosted code sandbox) |
 
 <br/>
 
@@ -157,7 +193,7 @@ A few design decisions worth knowing if you read or extend the code:
 
 ### Getting started
 
-**You need:** JDK 25, Node.js 20.19+ or 22.12+, MySQL 8, Docker (for Qdrant), and a [Gemini API key](https://aistudio.google.com/app/apikey).
+**You need:** JDK 25, Node.js 20.19+ or 22.12+, MySQL 8, Docker (for Qdrant and Piston), and a [Gemini API key](https://aistudio.google.com/app/apikey).
 
 **1. Qdrant** (gRPC on 6334, dashboard on 6333)
 
@@ -166,14 +202,27 @@ docker run -d --name devtutor-qdrant --restart unless-stopped \
   -p 6333:6333 -p 6334:6334 qdrant/qdrant
 ```
 
-**2. Backend** (port 8081). Set the environment variables below first.
+**2. Piston** (code sandbox on 2000). Install the Java and Python runtimes once; they are kept in the `piston_data` volume.
+
+```bash
+docker run --privileged -v piston_data:/piston -dit -p 2000:2000 --name piston_api \
+  --restart unless-stopped -e PISTON_RUN_TIMEOUT=15000 -e PISTON_RUN_CPU_TIME=15000 \
+  ghcr.io/engineer-man/piston
+
+curl -X POST localhost:2000/api/v2/packages -H "Content-Type: application/json" -d '{"language":"java","version":"15.0.2"}'
+curl -X POST localhost:2000/api/v2/packages -H "Content-Type: application/json" -d '{"language":"python","version":"3.12.0"}'
+```
+
+The longer time limit is needed because Java compiles before it runs. Each install can take a few minutes.
+
+**3. Backend** (port 8081). Set the environment variables below first.
 
 ```bash
 cd DevTutor
 ./mvnw spring-boot:run
 ```
 
-**3. Frontend** (port 5173)
+**4. Frontend** (port 5173)
 
 ```bash
 cd DevGuideFrontend
@@ -181,7 +230,7 @@ npm install
 npm run dev
 ```
 
-**4. Explore the API** at http://localhost:8081/swagger-ui.html: log in, click **Authorize**, and paste the token.
+**5. Explore the API** at http://localhost:8081/swagger-ui.html: log in, click **Authorize**, and paste the token.
 
 <details>
 <summary><b>Environment variables</b></summary>
@@ -197,9 +246,10 @@ npm run dev
 | `CONTEXT7_API_KEY` | | Live documentation lookups |
 | `GITHUB_PERSONAL_ACCESS_TOKEN` | | GitHub MCP (read-only) |
 | `CORS_ALLOWED_ORIGINS` | | Comma-separated frontend URLs. Defaults to `http://localhost:5173` |
+| `PISTON_URL` | | Code sandbox. Defaults to `http://localhost:2000` |
 | `PORT` | | Defaults to `8081` |
 
-Token lifetime is set by `jwt.expiration-minutes` (default `60`) in `application.properties`.
+Token lifetime is set by `jwt.expiration-minutes` (default `60`) in `application.properties`. The models are set there too: `spring.ai.google.genai.chat.model` (main) and `app.ai.fallback-model` (backup).
 
 </details>
 
@@ -227,6 +277,11 @@ After that, admins can change roles with `PUT /api/users/{id}`.
 | `503 Document search is unavailable` | Qdrant went down while running | Start Qdrant, then retry |
 | `503 AI service is busy` | Gemini rate limit (429) | Wait a moment and retry |
 | CORS error in the browser | Frontend URL isn't allowed | Add it to `CORS_ALLOWED_ORIGINS` |
+| `McpHttpClientTransportAuthorizationException` on startup | A Context7 or GitHub key is wrong, expired or not set in this terminal / IDE run configuration | Check `CONTEXT7_API_KEY` and `GITHUB_PERSONAL_ACCESS_TOKEN`, then restart |
+| `WARN Main model failed …, using fallback …` | The main Gemini model is busy or unavailable | Nothing to do; the backup answered. Change `app.ai.fallback-model` if the backup is retired |
+| The tutor says it couldn't run the code | Piston isn't running | `docker start piston_api` |
+| `Time limit exceeded` for Java | Piston's default 3 s limit | Recreate the container with the `PISTON_RUN_TIMEOUT` / `PISTON_RUN_CPU_TIME` settings above |
+| `502 Could not create a valid challenge` | The AI's reference solution failed its own tests twice | Retry; the reason is logged as `Challenge rejected …` |
 
 </details>
 
@@ -247,8 +302,13 @@ All endpoints except `/api/auth/**` need `Authorization: Bearer <token>`. **owne
 | `PATCH` | `/api/chat/conversations/{id}` | owner | Rename (`{"title": "…"}`) |
 | `DELETE` | `/api/chat/conversations/{id}` | owner | Delete it with everything it owns |
 | **Chat** | | | |
-| `POST` | `/api/chat` | owner | Send a message (multipart, optional image) |
+| `POST` | `/api/chat` | owner | Send a message (multipart, optional image, optional `hintMode=true`) |
 | `GET` | `/api/chat/conversations/{id}/messages` | owner | Message history, oldest first |
+| **Quizzes & challenges** | | | |
+| `POST` | `/api/chat/conversations/{id}/quiz` | owner | 3-question quiz on the recent lesson |
+| `POST` | `/api/chat/conversations/{id}/quiz/result` | owner | Save a score (`{"topic","score","total"}`) |
+| `POST` | `/api/chat/conversations/{id}/challenge` | owner | Coding challenge with hidden, verified tests |
+| `POST` | `/api/challenges/{id}/submit` | owner | Run your code (`{"code": "…"}`) → `status`, `passed`, `total`, `output` |
 | **PDFs (RAG)** | | | |
 | `POST` | `/api/documents/upload` | owner | Add a PDF to a conversation |
 | `GET` | `/api/documents/uploads?conversationId=` | owner | List a conversation's PDFs |
@@ -258,6 +318,9 @@ All endpoints except `/api/auth/**` need `Authorization: Bearer <token>`. **owne
 | `GET` | `/api/documents/{id}/download` | owner | Download a generated file |
 | **Users** | | | |
 | `GET` | `/api/users/me` | user | Your profile (name, email, role) |
+| `GET` | `/api/users/me/progress` | user | Your quiz and challenge scores, newest first |
+| `GET` | `/api/users/me/notes` | user | What the AI remembers about you (10 newest notes) |
+| `DELETE` | `/api/users/me/notes/{id}` | user | Delete one of your notes |
 | `GET` | `/api/users` | admin | List users |
 | `PUT` | `/api/users/{id}` | admin | Edit name, email or role |
 | `DELETE` | `/api/users/{id}` | admin | Delete a user |
@@ -316,9 +379,9 @@ DevTutor_AI/
 │     ├─ auth/                    register & login
 │     ├─ security/                JWT, roles, CORS
 │     ├─ controller/              chat, conversations, documents, users, search
-│     ├─ service/                 chat (RAG + memory + tools), conversations, PDF ingestion, file generation
-│     ├─ tools/                   createDocument tool (PDF / DOCX)
-│     ├─ config/                  AI memory, tool errors, MCP, Cloudinary
+│     ├─ service/                 chat (RAG + memory + tools), quizzes & challenges, challenge runner, conversations, PDF ingestion, file generation
+│     ├─ tools/                   AI tools: createDocument, runCode, saveLearnerNote
+│     ├─ config/                  AI memory, tool errors, backup model, MCP, Cloudinary
 │     ├─ entity/ · repository/    JPA model
 │     ├─ dto/ · mapper/           API contracts, MapStruct
 │     └─ exception/               global error handling
@@ -340,6 +403,12 @@ DevTutor_AI/
 - [x] JWT auth, USER/ADMIN roles, ownership on every resource, admin user management
 - [x] List, rename and delete conversations; list and remove PDFs; list generated files
 - [x] CORS for the React app, `GET /api/users/me`
+- [x] Quizzes, saved scores per concept, and a tutor that adapts to weak topics
+- [x] Runs code in a self-hosted Piston sandbox
+- [x] "Prove it" challenges graded by hidden, pre-verified tests
+- [x] Learner notes the AI writes and reads across conversations, with list and delete
+- [x] Hint mode and an automatic backup model
+- [ ] **Spaced repetition:** re-test each concept at the right time
 - [ ] **Frontend:** login & register, chat with image and PDF upload, sources and downloads, admin page
 - [ ] **Connect GitHub** per user (OAuth), so learners can explore their own repos
 - [ ] Streaming answers

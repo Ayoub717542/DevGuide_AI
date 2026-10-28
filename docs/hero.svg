@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="320" viewBox="0 0 960 320" role="img" aria-label="DevGuide AI: an AI programming tutor. Layers: React UI, Spring API, AI core.">
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="320" viewBox="0 0 960 320" role="img" aria-label="DevGuide Agent: an AI programming tutor agent. Layers: React UI, Spring API, AI core.">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#0B1120"/>
@@ -94,15 +94,15 @@
   </g>
 
   <!-- title -->
-  <text class="title" x="540" y="132">DevGuide AI</text>
-  <text class="tag" x="540" y="162">An AI tutor that teaches you to code,</text>
-  <text class="tag" x="540" y="184">step by step, from real documentation.</text>
+  <text class="title" x="540" y="132">DevGuide Agent</text>
+  <text class="tag" x="540" y="162">An AI tutor agent that teaches you to code,</text>
+  <text class="tag" x="540" y="184">tests your skills and remembers how you learn.</text>
   <g transform="translate(540 210)">
     <rect width="104" height="26" rx="13" fill="#4F46E5" fill-opacity="0.25" stroke="#818CF8" stroke-opacity="0.5"/>
     <text class="chip" x="52" y="17" text-anchor="middle">Step-by-step</text>
     <rect x="114" width="96" height="26" rx="13" fill="#06B6D4" fill-opacity="0.18" stroke="#67E8F9" stroke-opacity="0.5"/>
-    <text class="chip" x="162" y="17" text-anchor="middle">Your PDFs</text>
+    <text class="chip" x="162" y="17" text-anchor="middle">Runs code</text>
     <rect x="220" width="112" height="26" rx="13" fill="#7C3AED" fill-opacity="0.22" stroke="#C4B5FD" stroke-opacity="0.5"/>
-    <text class="chip" x="276" y="17" text-anchor="middle">Live docs</text>
+    <text class="chip" x="276" y="17" text-anchor="middle">Remembers you</text>
   </g>
 </svg>
