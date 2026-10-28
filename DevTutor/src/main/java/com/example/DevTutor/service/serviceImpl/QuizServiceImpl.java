@@ -2,6 +2,8 @@ package com.example.DevTutor.service.serviceImpl;
 
 import com.example.DevTutor.dto.ChallengeDraft;
 import com.example.DevTutor.dto.ChallengeResponse;
+import com.example.DevTutor.dto.ChallengeResult;
+import lombok.extern.slf4j.Slf4j;
 import com.example.DevTutor.dto.QuizResponse;
 import com.example.DevTutor.dto.QuizResultRequest;
 import com.example.DevTutor.entity.Challenge;
@@ -9,6 +11,7 @@ import com.example.DevTutor.entity.QuizResult;
 import com.example.DevTutor.repository.ChallengeRepository;
 import com.example.DevTutor.repository.ConversationRepository;
 import com.example.DevTutor.repository.QuizResultRepository;
+import com.example.DevTutor.service.ChallengeRunner;
 import com.example.DevTutor.service.serviceInterface.QuizService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -19,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class QuizServiceImpl implements QuizService {
 
@@ -27,17 +31,20 @@ public class QuizServiceImpl implements QuizService {
     private final ConversationRepository conversationRepository;
     private final QuizResultRepository quizResultRepository;
     private final ChallengeRepository challengeRepository;
+    private final ChallengeRunner challengeRunner;
 
     public QuizServiceImpl(ChatClient.Builder builder,
                            ChatMemory chatMemory,
                            ConversationRepository conversationRepository,
                            QuizResultRepository quizResultRepository,
-                           ChallengeRepository challengeRepository) {
+                           ChallengeRepository challengeRepository,
+                           ChallengeRunner challengeRunner) {
         this.chatClient = builder.build();
         this.chatMemory = chatMemory;
         this.conversationRepository = conversationRepository;
         this.quizResultRepository = quizResultRepository;
         this.challengeRepository = challengeRepository;
+        this.challengeRunner = challengeRunner;
     }
 
     @Override
@@ -86,7 +93,9 @@ public class QuizServiceImpl implements QuizService {
         String email = checkOwner(conversationId);
         String lesson = lesson(conversationId);
 
-        ChallengeDraft draft = chatClient.prompt()
+        ChallengeDraft draft = null;
+        for (int attempt = 0; attempt < 2 && draft == null; attempt++) {
+            ChallengeDraft candidate = chatClient.prompt()
                 .user("""
                         Create a small Java coding exercise about what was taught in this lesson.
                         The learner writes a class named Solution with one static method.
@@ -104,6 +113,20 @@ public class QuizServiceImpl implements QuizService {
                 .call()
                 .entity(ChallengeDraft.class);
 
+            ChallengeResult check = challengeRunner.run(candidate.testCode(), candidate.referenceSolution());
+            if (check.status().equals("ok")) {
+                draft = candidate;
+            } else {
+                log.warn("Challenge rejected ({}): {}", check.status(), check.output());
+            }
+        }
+
+        if (draft == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Could not create a valid challenge. Please try again.");
+        }
+
         Challenge challenge = new Challenge();
         challenge.setTitle(draft.title());
         challenge.setTask(draft.task());
@@ -114,6 +137,23 @@ public class QuizServiceImpl implements QuizService {
         challenge.setUserEmail(email);
 
         return ChallengeResponse.from(challengeRepository.save(challenge));
+    }
+
+    @Override
+    public ChallengeResult submitChallenge(Long challengeId, String code) {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Challenge challenge = challengeRepository.findByIdAndUserEmail(challengeId, email)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Challenge not found"));
+
+        if (code == null || code.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Write some code before submitting.");
+        }
+
+        return challengeRunner.run(challenge.getTestCode(), code);
     }
 
     private String lesson(Long conversationId) {

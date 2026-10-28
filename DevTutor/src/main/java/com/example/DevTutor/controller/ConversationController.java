@@ -1,5 +1,6 @@
 package com.example.DevTutor.controller;
 
+import com.example.DevTutor.dto.ChallengeResponse;
 import com.example.DevTutor.dto.ConversationResponse;
 import com.example.DevTutor.dto.CreateConversationRequest;
 import com.example.DevTutor.dto.QuizResponse;
@@ -56,6 +57,12 @@ public class ConversationController {
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public QuizResponse generateQuiz(@PathVariable Long id) {
         return quizService.generateQuiz(id);
+    }
+
+    @PostMapping("/{id}/challenge")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    public ChallengeResponse createChallenge(@PathVariable Long id) {
+        return quizService.createChallenge(id);
     }
 
     @PostMapping("/{id}/quiz/result")

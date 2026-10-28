@@ -20,6 +20,7 @@ public class ChallengeRunner {
         String file = """
                 import java.util.*;
                 import java.util.function.*;
+                import java.util.stream.*;
 
                 public class Main {
                     static int passed = 0;
@@ -51,7 +52,8 @@ public class ChallengeRunner {
                 }
 
                 %s
-                """.formatted(nonce, testCode, code.replace("public class Solution", "class Solution"));
+                """.formatted(nonce, removeImports(testCode),
+                removeImports(code).replace("public class Solution", "class Solution"));
 
         Map<String, Object> run = codeRunnerTools.runCode("java", file);
         String output = String.valueOf(run.getOrDefault("output", run.get("error")));
@@ -72,5 +74,9 @@ public class ChallengeRunner {
         String status = total > 0 && passed == total ? "ok" : "wrong_answer";
 
         return new ChallengeResult(status, passed, total, output.substring(0, index).trim());
+    }
+
+    private static String removeImports(String code) {
+        return code.replaceAll("(?m)^\\s*import\\s+[\\w.*\\s]+;", "");
     }
 }
