@@ -57,6 +57,8 @@ public class QuizServiceImpl implements QuizService {
                         Each question has 4 options and one correct answer.
                         correctIndex starts at 0.
                         Keep the explanation to one short sentence.
+                        Set topic to a short lowercase concept id, like java-streams or java-generics.
+                        Always use the same id for the same concept.
 
                         Lesson:
                         """ + lesson)
