@@ -1,10 +1,12 @@
 package com.example.DevTutor.controller;
 
+import com.example.DevTutor.dto.LearnerNoteResponse;
 import com.example.DevTutor.dto.QuizResultResponse;
 import com.example.DevTutor.dto.UpdateUserRequest;
 import com.example.DevTutor.dto.UserResponse;
 import com.example.DevTutor.entity.User;
 import com.example.DevTutor.mapper.UserMapper;
+import com.example.DevTutor.repository.LearnerNoteRepository;
 import com.example.DevTutor.repository.QuizResultRepository;
 import com.example.DevTutor.repository.UserRepository;
 import jakarta.validation.Valid;
@@ -26,6 +28,7 @@ public class UserController {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final QuizResultRepository quizResultRepository;
+    private final LearnerNoteRepository learnerNoteRepository;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -52,6 +55,24 @@ public class UserController {
                 .stream()
                 .map(QuizResultResponse::from)
                 .toList();
+    }
+
+    @GetMapping("/me/notes")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    public List<LearnerNoteResponse> notes(Authentication authentication) {
+        return learnerNoteRepository.findTop10ByUserEmailOrderByCreatedAtDesc(authentication.getName())
+                .stream()
+                .map(LearnerNoteResponse::from)
+                .toList();
+    }
+
+    @DeleteMapping("/me/notes/{id}")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteNote(@PathVariable Long id, Authentication authentication) {
+        if (learnerNoteRepository.deleteByIdAndUserEmail(id, authentication.getName()) == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Note not found");
+        }
     }
 
     @PutMapping("/{id}")
