@@ -30,6 +30,7 @@ import com.cloudinary.Cloudinary;
 import java.util.Map;
 import com.example.DevTutor.tools.CodeRunnerTools;
 import com.example.DevTutor.tools.DocumentTools;
+import com.example.DevTutor.tools.LearnerNoteTools;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -64,6 +65,7 @@ public class ChatServiceImpl implements ChatService {
             ToolCallbackProvider mcpTools,
             DocumentTools documentTools,
             CodeRunnerTools codeRunnerTools,
+            LearnerNoteTools learnerNoteTools,
             ChatClient.Builder builder,
             ChatMemory chatMemory,
             VectorStore vectorStore,
@@ -86,7 +88,7 @@ public class ChatServiceImpl implements ChatService {
 
         this.chatClient = builder
                 .defaultSystem(guide)
-                .defaultTools(documentTools, codeRunnerTools).defaultTools(mcpTools)
+                .defaultTools(documentTools, codeRunnerTools, learnerNoteTools).defaultTools(mcpTools)
                 .defaultAdvisors(
                         MessageChatMemoryAdvisor.builder(chatMemory).build(),
 
@@ -169,7 +171,9 @@ public class ChatServiceImpl implements ChatService {
                         )
                 )
                 // Lets DocumentTools save documents to this conversation.
-                .toolContext(Map.of("conversationId", conversation.getId()))
+                .toolContext(Map.of(
+                        "conversationId", conversation.getId(),
+                        "userEmail", currentUserEmail()))
                 .call()
                 .chatClientResponse();
 
