@@ -3,6 +3,7 @@ package com.example.DevTutor.tools;
 import com.example.DevTutor.entity.LearnerNote;
 import com.example.DevTutor.repository.LearnerNoteRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class LearnerNoteTools {
@@ -30,6 +32,7 @@ public class LearnerNoteTools {
 
             ToolContext toolContext
     ) {
+        log.info("Saving learner note: {}", note);
         LearnerNote learnerNote = new LearnerNote();
         learnerNote.setNote(note.length() > 255 ? note.substring(0, 255) : note);
         learnerNote.setUserEmail((String) toolContext.getContext().get("userEmail"));
