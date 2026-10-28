@@ -66,6 +66,15 @@ public class UserController {
                 .toList();
     }
 
+    @DeleteMapping("/me/notes/{id}")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteNote(@PathVariable Long id, Authentication authentication) {
+        if (learnerNoteRepository.deleteByIdAndUserEmail(id, authentication.getName()) == 0) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Note not found");
+        }
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public UserResponse updateUser(@PathVariable Long id,
