@@ -1,9 +1,13 @@
 package com.example.DevTutor.service.serviceInterface;
 
+import com.example.DevTutor.dto.ChallengeResponse;
+import com.example.DevTutor.dto.ChallengeResult;
 import com.example.DevTutor.dto.QuizResponse;
 import com.example.DevTutor.dto.QuizResultRequest;
 
 public interface QuizService {
     QuizResponse generateQuiz(Long conversationId);
     void saveResult(Long conversationId, QuizResultRequest request);
+    ChallengeResponse createChallenge(Long conversationId);
+    ChallengeResult submitChallenge(Long challengeId, String code);
 }
