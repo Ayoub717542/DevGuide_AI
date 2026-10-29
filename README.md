@@ -78,6 +78,8 @@ Each message is checked, enriched with context (chat memory, your PDFs, your sco
 <summary><b>Architecture</b></summary>
 <br/>
 
+[![Architecture diagram](https://gitdiagram.com/diagram-badge.svg)](https://gitdiagram.com/ayoub717542/devguide_agent?utm_source=readme&utm_medium=badge)
+
 ```mermaid
 flowchart LR
     UI["React UI<br/><sub>Vite · JavaScript</sub>"] -- "JWT" --> API["Spring Boot API<br/><sub>Security · Spring AI</sub>"]
