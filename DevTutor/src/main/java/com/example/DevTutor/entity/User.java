@@ -1,6 +1,7 @@
 package com.example.DevTutor.entity;
 
 import com.example.DevTutor.enums.Roles;
+import com.example.DevTutor.security.GitHubTokenConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -36,6 +37,7 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Roles role = Roles.USER;
 
+    @Convert(converter = GitHubTokenConverter.class)
     private String githubToken;
 
     @Column(nullable = false, updatable = false)
