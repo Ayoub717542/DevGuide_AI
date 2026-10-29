@@ -13,4 +13,5 @@ public class MessageRequest {
     private Long conversationId;
     private String content;
     private boolean hintMode;
+    private boolean devMode;
 }
