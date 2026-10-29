@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
+import org.springframework.ai.mcp.ToolContextToMcpMetaConverter;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +19,11 @@ public class AiConfig {
                 .chatMemoryRepository(chatMemoryRepository)
                 .maxMessages(20)
                 .build();
+    }
+
+    @Bean
+    public ToolContextToMcpMetaConverter toolContextToMcpMetaConverter() {
+        return ToolContextToMcpMetaConverter.noOp();
     }
 
     @Bean
