@@ -2,6 +2,7 @@ package com.example.DevTutor.controller;
 
 import com.example.DevTutor.dto.LearnerNoteResponse;
 import com.example.DevTutor.dto.QuizResultResponse;
+import com.example.DevTutor.dto.ReviewResponse;
 import com.example.DevTutor.dto.UpdateUserRequest;
 import com.example.DevTutor.dto.UserResponse;
 import com.example.DevTutor.entity.User;
@@ -9,6 +10,7 @@ import com.example.DevTutor.mapper.UserMapper;
 import com.example.DevTutor.repository.LearnerNoteRepository;
 import com.example.DevTutor.repository.QuizResultRepository;
 import com.example.DevTutor.repository.UserRepository;
+import com.example.DevTutor.service.ReviewScheduler;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -29,6 +31,7 @@ public class UserController {
     private final UserMapper userMapper;
     private final QuizResultRepository quizResultRepository;
     private final LearnerNoteRepository learnerNoteRepository;
+    private final ReviewScheduler reviewScheduler;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -46,6 +49,13 @@ public class UserController {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "User not found")));
+    }
+
+    @GetMapping("/me/reviews")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    public List<ReviewResponse> reviews(Authentication authentication) {
+        return reviewScheduler.schedule(
+                quizResultRepository.findByUserEmailOrderByCreatedAtDesc(authentication.getName()));
     }
 
     @GetMapping("/me/progress")
