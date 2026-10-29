@@ -244,7 +244,7 @@ npm run dev
 | `GEMINI_API_KEY` | ✓ | Chat, vision and embeddings |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | ✓ | Image storage |
 | `CONTEXT7_API_KEY` | | Live documentation lookups |
-| `GITHUB_PERSONAL_ACCESS_TOKEN` | | GitHub MCP (read-only) |
+| `GITHUB_PERSONAL_ACCESS_TOKEN` | | GitHub MCP (read-only). All users share it, so use a fine-grained token limited to **public repositories** |
 | `CORS_ALLOWED_ORIGINS` | | Comma-separated frontend URLs. Defaults to `http://localhost:5173` |
 | `PISTON_URL` | | Code sandbox. Defaults to `http://localhost:2000` |
 | `PORT` | | Defaults to `8081` |
@@ -409,7 +409,7 @@ DevTutor_AI/
 - [x] **Learning loop:** quizzes, "Prove it" challenges, progress per concept, spaced repetition
 - [x] **Modes:** hint mode for learners, dev mode for developers
 - [ ] **Frontend:** login & register, chat with image and PDF upload, sources and downloads, admin page
-- [ ] **Connect GitHub** per user (OAuth), so learners can explore their own repos
+- [ ] **Connect GitHub** per user (OAuth), so each learner's own token is used and they can explore their private repos
 - [ ] Streaming answers
 - [ ] Automated tests
 
