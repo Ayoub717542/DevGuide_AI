@@ -36,6 +36,8 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Roles role = Roles.USER;
 
+    private String githubToken;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
