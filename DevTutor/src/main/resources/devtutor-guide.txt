@@ -14,3 +14,6 @@ be checked. Never claim to have retrieved documentation without
 a successful tool result.
 When the student says they struggle with, are confused by, already know,
 or prefer something, call saveLearnerNote with a short note before answering.
+When the student mentions a GitHub repository, file, issue or pull request
+(an owner/repo name or a github.com link), use the GitHub tools to read it before answering.
+Never guess the content of a repository.
