@@ -94,8 +94,8 @@ Every conversation is private to its owner and remembered across restarts, so yo
 **Learns about you**<br/>
 <sub>The AI saves short notes like "struggles with generics" and reads them in every new conversation. You can list and delete them.</sub>
 
-**Hint mode**<br/>
-<sub>One switch and the tutor gives hints and guiding questions instead of the full answer.</sub>
+**Hint mode and Dev mode**<br/>
+<sub>Hint mode gives hints and guiding questions instead of the full answer; Dev mode answers experienced developers directly, code first, in any language.</sub>
 
 **Backup model**<br/>
 <sub>If Gemini is overloaded, a second Gemini model answers automatically, and the switch is logged.</sub>
@@ -132,7 +132,7 @@ flowchart LR
 <summary><b>How a message flows</b></summary>
 <br/>
 
-1. The React app sends the message (and an optional image) with the user's JWT, plus `hintMode` if it's on.
+1. The React app sends the message (and an optional image) with the user's JWT, plus `hintMode` or `devMode` if one is on.
 2. Spring Security validates the token and role; the service checks the conversation belongs to that user.
 3. The system prompt is built from the tutor guide, the user's recent **quiz scores** and the AI's **notes about the learner** (plus the hint-mode rule).
 4. `MessageChatMemoryAdvisor` adds the last 20 messages; `QuestionAnswerAdvisor` adds the best-matching chunks from **this conversation's** PDFs only.
@@ -302,7 +302,7 @@ All endpoints except `/api/auth/**` need `Authorization: Bearer <token>`. **owne
 | `PATCH` | `/api/chat/conversations/{id}` | owner | Rename (`{"title": "…"}`) |
 | `DELETE` | `/api/chat/conversations/{id}` | owner | Delete it with everything it owns |
 | **Chat** | | | |
-| `POST` | `/api/chat` | owner | Send a message (multipart, optional image, optional `hintMode=true`) |
+| `POST` | `/api/chat` | owner | Send a message (multipart, optional image, optional `hintMode=true` or `devMode=true`) |
 | `GET` | `/api/chat/conversations/{id}/messages` | owner | Message history, oldest first |
 | **Quizzes & challenges** | | | |
 | `POST` | `/api/chat/conversations/{id}/quiz` | owner | 3-question quiz on the recent lesson |
@@ -407,7 +407,7 @@ DevTutor_AI/
 - [x] Runs code in a self-hosted Piston sandbox
 - [x] "Prove it" challenges graded by hidden, pre-verified tests
 - [x] Learner notes the AI writes and reads across conversations, with list and delete
-- [x] Hint mode and an automatic backup model
+- [x] Hint mode, Dev mode and an automatic backup model
 - [ ] **Spaced repetition:** re-test each concept at the right time
 - [ ] **Frontend:** login & register, chat with image and PDF upload, sources and downloads, admin page
 - [ ] **Connect GitHub** per user (OAuth), so learners can explore their own repos

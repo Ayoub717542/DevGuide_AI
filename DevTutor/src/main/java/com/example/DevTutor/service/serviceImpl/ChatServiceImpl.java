@@ -64,6 +64,14 @@ public class ChatServiceImpl implements ChatService {
             Give one small hint or ask a guiding question so the learner finds the answer.
             """;
 
+    private static final String DEV_MODE = """
+
+
+            Dev mode is on: the user is an experienced developer.
+            Answer directly and show the code first. Skip beginner explanations and step-by-step teaching.
+            Any language or framework is fine, not only Java.
+            """;
+
     public ChatServiceImpl(
             ToolCallbackProvider mcpTools,
             DocumentTools documentTools,
@@ -158,7 +166,9 @@ public class ChatServiceImpl implements ChatService {
         messageRepository.save(userMessage);
 
         ChatClientResponse aiResponse = chatClient.prompt()
-                .system(guide + quizScores() + learnerNotes() + (request.isHintMode() ? HINT_MODE : ""))
+                .system(guide + quizScores() + learnerNotes()
+                        + (request.isHintMode() ? HINT_MODE : "")
+                        + (request.isDevMode() ? DEV_MODE : ""))
                 .user(u -> {
                     u.text(request.getContent());
                     if (media != null) {
