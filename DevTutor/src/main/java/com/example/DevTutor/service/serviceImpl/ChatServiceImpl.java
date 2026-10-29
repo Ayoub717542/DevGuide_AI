@@ -11,6 +11,9 @@ import com.example.DevTutor.repository.ConversationRepository;
 import com.example.DevTutor.repository.GeneratedDocumentRepository;
 import com.example.DevTutor.repository.MessageRepository;
 import com.example.DevTutor.repository.LearnerNoteRepository;
+import com.example.DevTutor.dto.ReviewResponse;
+import com.example.DevTutor.service.ReviewScheduler;
+import java.util.stream.Collectors;
 import com.example.DevTutor.repository.QuizResultRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.example.DevTutor.service.serviceInterface.ChatService;
@@ -55,6 +58,7 @@ public class ChatServiceImpl implements ChatService {
     private final GeneratedDocumentRepository generatedDocumentRepository;
     private final QuizResultRepository quizResultRepository;
     private final LearnerNoteRepository learnerNoteRepository;
+    private final ReviewScheduler reviewScheduler;
     private final String guide;
 
     private static final String HINT_MODE = """
@@ -85,12 +89,14 @@ public class ChatServiceImpl implements ChatService {
             MessageMapper messageMapper, Cloudinary cloudinary,
             GeneratedDocumentRepository generatedDocumentRepository,
             QuizResultRepository quizResultRepository,
-            LearnerNoteRepository learnerNoteRepository
+            LearnerNoteRepository learnerNoteRepository,
+            ReviewScheduler reviewScheduler
     ) throws IOException {
 
         this.generatedDocumentRepository = generatedDocumentRepository;
         this.quizResultRepository = quizResultRepository;
         this.learnerNoteRepository = learnerNoteRepository;
+        this.reviewScheduler = reviewScheduler;
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.messageMapper = messageMapper;
@@ -164,9 +170,10 @@ public class ChatServiceImpl implements ChatService {
         }
 
         messageRepository.save(userMessage);
+        boolean firstMessage = messageRepository.countByConversationId(conversation.getId()) == 1;
 
         ChatClientResponse aiResponse = chatClient.prompt()
-                .system(guide + quizScores() + learnerNotes()
+                .system(guide + quizScores() + learnerNotes() + (firstMessage ? dueReviews() : "")
                         + (request.isHintMode() ? HINT_MODE : "")
                         + (request.isDevMode() ? DEV_MODE : ""))
                 .user(u -> {
@@ -224,6 +231,22 @@ public class ChatServiceImpl implements ChatService {
         return response;
     }
 
+    private String dueReviews() {
+        String due = reviewScheduler.schedule(
+                        quizResultRepository.findByUserEmailOrderByCreatedAtDesc(currentUserEmail()))
+                .stream()
+                .filter(ReviewResponse::due)
+                .map(ReviewResponse::concept)
+                .collect(Collectors.joining(", "));
+        if (due.isEmpty()) {
+            return "";
+        }
+
+        return "\n\nConcepts due for review: " + due + ".\n"
+                + "At the end of your answer, offer a short review quiz on them in one sentence.\n"
+                + "Do not ask the quiz questions yourself.";
+    }
+
     private String learnerNotes() {
         List<LearnerNote> notes = learnerNoteRepository
                 .findTop10ByUserEmailOrderByCreatedAtDesc(currentUserEmail());
@@ -235,6 +258,7 @@ public class ChatServiceImpl implements ChatService {
         for (LearnerNote note : notes) {
             text.append("- ").append(note.getNote()).append("\n");
         }
+        text.append("Use these to adapt your explanations. Only mention them when they relate to the user's question.");
         return text.toString();
     }
 
@@ -251,7 +275,7 @@ public class ChatServiceImpl implements ChatService {
                     .append(result.getScore()).append("/").append(result.getTotal())
                     .append("\n");
         }
-        text.append("Spend more time on topics with low scores.");
+        text.append("Use these to adapt your explanations. Only mention them when they relate to the user's question.");
         return text.toString();
     }
 
